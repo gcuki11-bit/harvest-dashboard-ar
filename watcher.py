@@ -1,6 +1,6 @@
 """
 watcher.py — Reporte de Cosecha AR
-Lee BASE DE DATOS REPORTE DE COSECHA.xlsx y pushea harvest_data.json al repo via GitHub API.
+Lee Reporte de Cosecha ARG - Database.xlsx y pushea harvest_data.json al repo via GitHub API.
 """
 
 import json
@@ -14,7 +14,7 @@ from openpyxl import load_workbook
 import os
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
-EXCEL_PATH   = Path(__file__).parent / "BASE DE DATOS REPORTE DE COSECHA.xlsx"
+EXCEL_PATH   = Path(__file__).parent / "Reporte de Cosecha ARG - Database.xlsx"
 GITHUB_TOKEN = "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"   # mismo token
 GITHUB_OWNER = "gcuki11-bit"
 GITHUB_REPO  = "harvest-dashboard-ar"       # ← repo nuevo para AR
