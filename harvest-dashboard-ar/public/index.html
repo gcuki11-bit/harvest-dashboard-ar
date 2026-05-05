@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Ingleby Farms AR · Cosecha 25/26</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --green:#2D5A27;--green-l:#E8F2E6;--green-m:#3B7A35;
+  --blue:#2D5A27;--blue-l:#E8F2E6;--blue-m:#3B7A35;
+  --amber:#A8893A;--amber-l:#F5EFD6;--amber-m:#C4A84F;
+  --red:#8B2E2E;--red-l:#F5E6E6;
+  --teal:#3B6B3A;--teal-l:#E6F0E5;--teal-m:#4E8A4D;
+  --purple:#5A6B2A;--purple-l:#EDF2E0;
+  --ink:#1C2B1A;--ink2:#4A5E48;--ink3:#8A9E88;
+  --bg:#F5F2E8;--card:#FFFFFF;--border:#DDD8C4;
+  --r:14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --green:#5AA653;--green-l:#1A2E19;--green-m:#4E8A4D;
+    --blue:#5AA653;--blue-l:#1A2E19;--blue-m:#4E8A4D;
+    --amber:#C4A84F;--amber-l:#2A2410;--amber-m:#D4B85F;
+    --red:#E06060;--red-l:#2A1515;
+    --teal:#4E8A4D;--teal-l:#172517;--teal-m:#5AA653;
+    --purple:#8AAD5A;--purple-l:#1E2A10;
+    --ink:#F0EDE4;--ink2:#C4BFB0;--ink3:#7A7A6A;
+    --bg:#0F1A0E;--card:#172015;--border:#2A3828;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:15px;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;padding-bottom:40px}
+
+/* HEADER */
+.hdr{background:#0F1A0E;color:#fff;padding:12px 16px 8px;position:sticky;top:0;z-index:50}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.hdr-title{font-size:14px;font-weight:700;letter-spacing:-.2px}
+.hdr-badge{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#FAEEDA;color:#854F0B}
+.hdr-update{font-size:10px;color:#666;display:flex;align-items:center;gap:5px;margin-bottom:8px}
+.live-dot{width:6px;height:6px;border-radius:50%;display:inline-block;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* FILTRO GLOBAL DE CULTIVOS */
+.crop-filter-bar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.crop-filter-bar::-webkit-scrollbar{display:none}
+.cf-btn{flex-shrink:0;padding:5px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);font-size:11px;font-weight:600;color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;white-space:nowrap}
+.cf-btn.on{background:#fff;color:var(--ink);border-color:#fff}
+.cf-btn.on.c-mr{background:#FAEEDA;color:#854F0B;border-color:#FAEEDA}
+.cf-btn.on.c-m{background:#FFF3E0;color:#633806;border-color:#FFF3E0}
+.cf-btn.on.c-s{background:#EAF3DE;color:#3B6D11;border-color:#EAF3DE}
+.cf-btn.on.c-sr{background:#E1F5EE;color:#0F6E56;border-color:#E1F5EE}
+
+/* TABS */
+.tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;position:sticky;top:105px;z-index:40}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:11px 16px;font-size:12px;font-weight:500;color:var(--ink3);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+
+/* PAGES */
+.page{display:none;padding:12px 12px 0}
+.page.active{display:block}
+
+/* CULTIVO ACTIVO BANNER */
+.crop-banner{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.crop-banner-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px}
+.crop-banner-value{font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.3px;margin-top:2px}
+
+/* SEC LABEL */
+.sec-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;padding:14px 2px 6px}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.kpi{background:var(--card);border-radius:var(--r);padding:13px 14px;border:1px solid var(--border)}
+.kpi-full{grid-column:1/-1}
+.kpi-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.kpi-val{font-size:22px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:-.5px}
+.kpi-val.sm{font-size:18px}
+.kpi-val.xs{font-size:15px;font-weight:600}
+.kpi-sub{font-size:11px;color:var(--ink3);margin-top:3px}
+
+/* KPI AREA TOTAL — grande */
+.kpi-area{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px}
+.kpi-area-row{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.kpi-area-main{font-size:38px;font-weight:700;color:var(--ink);letter-spacing:-1px;line-height:1}
+.kpi-area-unit{font-size:14px;font-weight:500;color:var(--ink3);margin-left:3px}
+.kpi-area-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.kpi-area-splits{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}
+.kpi-area-split{display:flex;flex-direction:column}
+.kas-val{font-size:20px;font-weight:700;letter-spacing:-.5px}
+.kas-label{font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-top:1px}
+
+.ac-green{background:var(--green-l);border-color:rgba(59,109,17,.15)} .ac-green .kpi-val{color:var(--green)}
+.ac-blue{background:var(--blue-l);border-color:rgba(24,95,165,.15)}   .ac-blue .kpi-val{color:var(--blue)}
+.ac-amber{background:var(--amber-l);border-color:rgba(133,79,11,.15)} .ac-amber .kpi-val{color:var(--amber)}
+.ac-purple{background:var(--purple-l);border-color:rgba(83,74,183,.15)} .ac-purple .kpi-val{color:var(--purple)}
+
+.prog-wrap{background:#E4E2DA;border-radius:4px;height:5px;width:100%;margin-top:7px}
+.prog-bar{height:5px;border-radius:4px;transition:width .8s ease}
+
+/* CARD */
+.card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);margin-bottom:10px;overflow:hidden}
+.card-head{padding:11px 14px;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.chart-wrap{padding:14px;position:relative}
+
+/* DONUT GRID */
+.donut-grid{display:flex;flex-direction:column;gap:0;margin-bottom:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.donut-card{background:var(--card);padding:11px 14px;border-bottom:1px solid var(--border)}.donut-card:last-child{border-bottom:none}
+.donut-card-name{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.donut-wrap{position:relative;width:90px;height:90px;margin:0 auto 6px}
+.donut-pct{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:16px;font-weight:700;color:var(--ink)}
+.donut-ha{font-size:10px;color:var(--ink3)}
+
+/* PILLS */
+.pill{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.pill-mr{background:var(--amber-l);color:var(--amber)}
+.pill-m{background:#FFF3E0;color:#633806}
+.pill-s{background:var(--green-l);color:var(--green)}
+.pill-sr{background:var(--teal-l);color:var(--teal)}
+
+/* FARM ROWS */
+.farm-row{padding:12px 14px;border-bottom:1px solid var(--border)}
+.farm-row:last-child{border-bottom:none}
+.farm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.farm-name{font-size:15px;font-weight:700}
+.farm-pct{font-size:14px;font-weight:700}
+.farm-stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.fstat{font-size:11px;color:var(--ink2)}
+.fstat b{color:var(--ink);font-weight:600}
+.dev-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+.dev-pos{background:var(--green-l);color:var(--green)}
+.dev-neg{background:var(--red-l);color:var(--red)}
+.dev-neu{background:var(--bg);color:var(--ink3)}
+
+/* PLOT */
+.plot-filters{padding:10px 12px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;border-bottom:1px solid var(--border)}
+.plot-filters::-webkit-scrollbar{display:none}
+.f-btn{flex-shrink:0;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg);font-size:11px;font-weight:600;color:var(--ink2);cursor:pointer}
+.f-btn.on{background:var(--blue-l);color:var(--blue);border-color:rgba(24,95,165,.3)}
+.plot-list{max-height:500px;overflow-y:auto}
+.plot-item{padding:10px 14px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:1fr auto;gap:3px 8px}
+.plot-item:last-child{border-bottom:none}
+.plot-item.done{background:rgba(99,153,34,.05)}
+.plot-name{font-size:13px;font-weight:700;grid-column:1}
+.plot-ha{font-size:13px;font-weight:700;text-align:right;grid-column:2;grid-row:1}
+.plot-meta{font-size:10px;color:var(--ink3);grid-column:1;display:flex;gap:5px;align-items:center;margin-top:1px}
+.plot-rinde{font-size:11px;font-weight:600;text-align:right;grid-column:2;grid-row:2}
+.plot-stats{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.pstat{font-size:11px;color:var(--ink3)}
+.pstat b{color:var(--ink);font-weight:600}
+
+.coming-soon{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px 20px;text-align:center;margin-bottom:10px}
+.cs-icon{font-size:28px;margin-bottom:8px}
+.cs-title{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.cs-sub{font-size:12px;color:var(--ink3);line-height:1.5}
+
+
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes countUp{from{opacity:0}to{opacity:1}}
+.anim-fade{animation:fadeUp .4s ease both}
+.anim-fade-1{animation:fadeUp .4s .05s ease both}
+.anim-fade-2{animation:fadeUp .4s .1s ease both}
+.anim-fade-3{animation:fadeUp .4s .15s ease both}
+.anim-fade-4{animation:fadeUp .4s .2s ease both}
+.anim-fade-5{animation:fadeUp .4s .25s ease both}
+.count-val{display:inline-block}
+
+
+
+.pdf-section-item{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg);border-radius:10px;cursor:pointer}
+.pdf-section-item:active{opacity:.8}
+.pdf-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.pdf-check.on{background:#1C2B1A;border-color:#1C2B1A;color:#fff}
+.pdf-section-name{font-size:13px;font-weight:600;color:var(--ink)}
+.pdf-section-desc{font-size:11px;color:var(--ink3);margin-top:1px}
+
+.pdf-btn{position:fixed;bottom:20px;right:16px;z-index:100;background:#1C2B1A;color:#fff;border:none;border-radius:50px;padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:all .2s}
+.pdf-btn:active{transform:scale(.96)}
+.pdf-btn.loading{opacity:.7;pointer-events:none}
+.pdf-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.pdf-btn.loading .pdf-spinner{display:block}
+.pdf-btn.loading .pdf-icon{display:none}
+
+
+
+#campaign-selector option{background:#1C2B1A;color:#fff;}
+.camp-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--green-l);color:var(--green);margin-left:6px}
+
+.hist-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:8px}
+.hist-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hist-date{font-size:13px;font-weight:700;color:var(--ink)}
+.hist-time{font-size:11px;color:var(--ink3);margin-top:1px}
+.hist-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.hist-kpis{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.hist-kpi{background:var(--bg);border-radius:8px;padding:8px 10px}
+.hist-kpi-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.hist-kpi-val{font-size:14px;font-weight:700;color:var(--ink)}
+.hist-delta{font-size:10px;font-weight:600;margin-top:1px}
+.hist-sep{border:none;border-top:1px dashed var(--border);margin:8px 0}
+
+
+.ff-btn{flex-shrink:0;padding:3px 10px;border-radius:20px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);font-size:10px;font-weight:600;color:rgba(255,255,255,.5);cursor:pointer;transition:all .15s;white-space:nowrap}
+.ff-btn.on{background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.35)}
+
+/* BIGGER NUMBERS */
+.kpi-val{font-size:26px;font-weight:700;color:var(--ink);line-height:1;letter-spacing:-.5px}
+.kpi-val.sm{font-size:21px}
+.kpi-val.xs{font-size:17px;font-weight:600}
+.exec-kpi-val{font-size:38px;font-weight:700;letter-spacing:-1px;line-height:1}
+
+/* RINDE CHART CARDS */
+.rinde-farm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.rinde-farm-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center}
+.rinde-farm-card-name{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.rinde-farm-val{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1}
+.rinde-farm-sub{font-size:11px;color:var(--ink3);margin-top:3px}
+.rinde-farm-bar{margin-top:8px}
+
+/* CROP COMPARISON */
+.crop-compare-grid{display:grid;gap:8px;margin-bottom:10px}
+.crop-compare-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.crop-compare-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.crop-compare-name{font-size:13px;font-weight:700}
+.crop-compare-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.cck{background:var(--bg);border-radius:8px;padding:8px;text-align:center}
+.cck-label{font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+.cck-val{font-size:15px;font-weight:700;color:var(--ink)}
+.crop-sum-card{background:var(--green-l);border:1px solid rgba(59,122,53,.2);border-radius:var(--r);padding:14px;margin-bottom:10px}
+
+
+
+.exec-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
+.exec-kpi-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.exec-kpi-val{font-size:34px;font-weight:700;letter-spacing:-1px;line-height:1}
+.exec-kpi-sub{font-size:12px;color:var(--ink3);margin-top:3px}
+.exec-kpi-icon{font-size:30px;opacity:.15}
+.exec-prog{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.exec-prog-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.exec-prog-title{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px}
+.exec-prog-pct{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.exec-prog-bar{background:#E4E2DA;border-radius:6px;height:10px;width:100%;overflow:hidden}
+.exec-prog-fill{height:10px;border-radius:6px}
+.exec-prog-meta{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--ink3)}
+.exec-farm-row{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);gap:8px}
+.exec-farm-row:last-child{border-bottom:none}
+.exec-farm-name{font-size:13px;font-weight:700;color:var(--ink);width:30px;flex-shrink:0}
+.exec-farm-bar-wrap{flex:1;background:#E4E2DA;border-radius:4px;height:6px}
+.exec-farm-bar{height:6px;border-radius:4px}
+.exec-farm-pct{font-size:12px;font-weight:700;min-width:34px;text-align:right;flex-shrink:0}
+.exec-farm-ha{font-size:10px;color:var(--ink3);min-width:72px;text-align:right;flex-shrink:0}
+.ufarm-row{padding:11px 14px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:5px}
+.ufarm-row:last-child{border-bottom:none}
+.ufarm-header{display:flex;align-items:center;justify-content:space-between}
+.ufarm-name{font-size:16px;font-weight:800;color:var(--ink);letter-spacing:-.3px}
+.ufarm-ha{font-size:14px;font-weight:700;color:var(--ink2)}
+.ufarm-pct{font-size:16px;font-weight:800}
+.ufarm-bar-wrap{background:var(--border);border-radius:5px;height:8px;overflow:hidden}
+.ufarm-bar{height:8px;border-radius:5px;transition:width .6s ease}
+
+.loading{text-align:center;padding:60px 20px;color:var(--ink3)}
+.spinner{width:26px;height:26px;border:2px solid var(--border);border-top-color:var(--green-m);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;font-weight:500;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200;white-space:nowrap}
+.toast.show{opacity:1}
+
+.no-data{text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-top">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px"><img src="data:image/png;base64,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" style="height:26px;width:auto" alt="Ingleby Farms"><div class="hdr-title">Cosecha 25/26</div></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+        <div class="hdr-sub" id="hdr-sub">Campaña 25-26</div>
+        <select id="campaign-selector" onchange="onCampaignChange()" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:6px;font-size:11px;padding:2px 6px;cursor:pointer;display:none"></select>
+      </div>
+    </div>
+    <span class="hdr-badge" id="status-badge">CARGANDO</span>
+  </div>
+  <div class="hdr-update">
+    <span class="live-dot" id="live-dot" style="background:#666"></span>
+    <span id="updated-label">Cargando...</span>
+  </div>
+  <div class="mod-nav" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:10px;border-top:1px solid rgba(255,255,255,.1);margin-top:8px">
+    <a href="/index.html" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.2);background:#fff;color:#1C2B1A;font-size:12px;font-weight:600;text-decoration:none">&#127806; Cosecha</a>
+    <a href="/ventas.html" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);font-size:12px;font-weight:600;color:rgba(255,255,255,.6);text-decoration:none">&#128221; Contratos</a>
+    <a href="#" style="flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);font-size:12px;font-weight:600;color:rgba(255,255,255,.3);text-decoration:none;pointer-events:none">&#127807; Siembra</a>
+  </div>
+  <!-- FILTRO GLOBAL DE CULTIVOS -->
+  <div class="crop-filter-bar" id="crop-filter-bar"></div>
+  <div class="crop-filter-bar" id="farm-filter-bar" style="margin-top:4px"></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('ejecutivo',this)">Ejecutivo</div>
+  <div class="tab" onclick="showTab('resumen',this)">Resumen</div>
+  <div class="tab" onclick="showTab('rindes',this)">Rindes</div>
+  <div class="tab" onclick="showTab('financiero',this)">Financiero</div>
+  <div class="tab" onclick="showTab('establecimientos',this)">Estab.</div>
+  <div class="tab" onclick="showTab('lotes',this)">Lotes</div>
+  <div class="tab" onclick="showTab('historia',this)">Historia</div>
+</div>
+
+<!-- EJECUTIVO -->
+<div id="tab-ejecutivo" class="page active">
+  <div id="exec-loading" class="loading"><div class="spinner"></div>Cargando...</div>
+  <div id="exec-content" style="display:none">
+    <div id="exec-banner"></div>
+    <div id="exec-kpis" style="padding:0 0 4px"></div>
+    <div id="exec-progress" style="margin-bottom:10px"></div>
+    <div class="card" id="exec-farms"></div>
+    <div style="text-align:center;font-size:11px;color:var(--ink3);padding:12px 0" id="exec-ts"></div>
+  </div>
+</div>
+
+<!-- RESUMEN -->
+<div id="tab-resumen" class="page">
+  <div id="loading-state" class="loading"><div class="spinner"></div>Cargando datos...</div>
+  <div id="resumen-content" style="display:none">
+    <div id="banner-resumen"></div>
+
+    <!-- AREA TOTAL GRANDE -->
+    <div class="kpi-area" id="kpi-area-total"></div>
+
+    <div class="kpi-grid">
+      <div class="kpi ac-blue kpi-full" id="kpi-avance"></div>
+      <div class="kpi ac-green" id="kpi-prod"></div>
+      <div class="kpi" id="kpi-prod-est"></div>
+    </div>
+
+    <!-- DONUTS POR CAMPO (arriba del gráfico) -->
+    <div class="sec-label">Avance % por establecimiento</div>
+    <div class="donut-grid" id="donut-grid"></div>
+
+    <!-- BARRAS APILADAS (debajo de los donuts) -->
+    <div class="card" style="margin-top:10px">
+      <div class="card-head">Ha cosechadas vs restantes</div>
+      <div class="chart-wrap" style="height:210px"><canvas id="chart-farm" role="img" aria-label="Avance por establecimiento"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head">Producción actual vs estimada (t)</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chart-crop" role="img" aria-label="Producción por cultivo"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- RINDES -->
+<div id="tab-rindes" class="page">
+  <div id="banner-rindes"></div>
+  <div class="sec-label">Rinde real vs proyectado</div>
+  <div class="kpi-grid">
+    <div class="kpi ac-green" id="kpi-rinde-real"></div>
+    <div class="kpi" id="kpi-rinde-est"></div>
+    <div class="kpi kpi-full" id="kpi-desvio"></div>
+    <div class="kpi" id="kpi-cumpl"></div>
+    <div class="kpi" id="kpi-rinde-qq"></div>
+  </div>
+  <div class="sec-label">Rinde por cultivo (t/ha)</div>
+  <div class="card"><div class="chart-wrap" style="height:220px"><canvas id="chart-rinde-crop" role="img" aria-label="Rinde por cultivo"></canvas></div></div>
+
+  <div class="sec-label">Rinde real por establecimiento</div>
+  <div class="rinde-farm-grid" id="rinde-farm-grid"></div>
+
+  <div class="sec-label">Comparación de cultivos</div>
+  <div id="crop-compare-section"></div>
+
+  <div class="sec-label">Desvío por establecimiento</div>
+  <div class="card" id="farm-desvio-list"></div>
+</div>
+
+<!-- FINANCIERO -->
+<div id="tab-financiero" class="page">
+  <div id="banner-financiero"></div>
+  <div class="sec-label">Ingresos</div>
+  <div class="kpi-grid">
+    <div class="kpi ac-amber" id="kpi-ing-real"></div>
+    <div class="kpi" id="kpi-ing-est"></div>
+    <div class="kpi kpi-full" id="kpi-ing-desvio"></div>
+    <div class="kpi" id="kpi-precio-real"></div>
+    <div class="kpi" id="kpi-ing-ha"></div>
+    <div class="kpi ac-purple" id="kpi-pendiente"></div>
+    <div class="kpi" id="kpi-pct-cobrado"></div>
+  </div>
+  <div class="sec-label">Ingreso por cultivo</div>
+  <div class="card"><div class="chart-wrap" style="height:220px"><canvas id="chart-ing-crop" role="img" aria-label="Ingreso por cultivo"></canvas></div></div>
+  <div class="coming-soon">
+    <div class="cs-icon">💰</div>
+    <div class="cs-title">Margen bruto por hectárea</div>
+    <div class="cs-sub">Se activa al cargar costos por cultivo.</div>
+  </div>
+</div>
+
+<!-- ESTABLECIMIENTOS -->
+<div id="tab-establecimientos" class="page">
+  <div id="banner-estab"></div>
+  <div class="sec-label">Todos los establecimientos</div>
+  <div class="card" id="farm-list"></div>
+</div>
+
+<!-- LOTES -->
+<div id="tab-lotes" class="page">
+  <div class="card">
+    <div class="plot-filters" id="plot-filters"></div>
+    <div class="plot-list" id="plot-list"></div>
+  </div>
+</div>
+
+
+<!-- HISTORIA -->
+<div id="tab-historia" class="page">
+  <div class="sec-label">Historial de actualizaciones</div>
+  <div id="historia-empty" style="display:none" class="coming-soon">
+    <div class="cs-icon">📅</div>
+    <div class="cs-title">Sin historial todavía</div>
+    <div class="cs-sub">Cada vez que se actualice el Excel va a aparecer un registro acá.</div>
+  </div>
+  <div id="historia-list"></div>
+  <div style="text-align:center;padding:12px 0">
+    <button onclick="clearHistory()" style="background:none;border:1px solid var(--border);border-radius:20px;padding:6px 16px;font-size:11px;color:var(--ink3);cursor:pointer">Limpiar historial</button>
+  </div>
+</div>
+
+
+<!-- COMPARAR CAMPAÑAS -->
+<div id="tab-comparar" class="page">
+  <div id="comp-content-main"></div>
+</div>
+
+
+<!-- COMERCIALIZACIÓN -->
+<div id="tab-comercio" class="page">
+
+  <!-- KPIs -->
+  <div class="sec-label">Resumen de comercialización</div>
+  <div class="kpi-grid" id="com-kpis"></div>
+
+  <!-- FILTROS -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" id="com-filters"></div>
+
+  <!-- POR CLIENTE -->
+  <div class="sec-label">Toneladas por cliente</div>
+  <div class="card" id="com-client-list"></div>
+
+  <!-- GRÁFICO -->
+  <div class="card" style="margin-bottom:10px">
+    <div class="card-head">Distribución por cliente (tn)</div>
+    <div class="chart-wrap" style="height:260px"><canvas id="chart-com-client" role="img" aria-label="Toneladas por cliente"></canvas></div>
+  </div>
+
+  <!-- POR CULTIVO -->
+  <div class="sec-label">Toneladas por cultivo</div>
+  <div class="card" id="com-item-list"></div>
+
+  <!-- CONTRATOS -->
+  <div class="sec-label">Seguimiento de contratos</div>
+  <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;padding:0 2px">Los datos de comprometido y pendiente provienen de la hoja TABLA DINAMICA DE CPE. Completá esas columnas en el Excel para ver el seguimiento.</div>
+  <div class="card" id="com-contracts"></div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+<button class="pdf-btn" id="pdf-btn" onclick="openPDFModal()">
+  <span class="pdf-icon">&#8681;</span>
+  <span class="pdf-spinner"></span>
+  <span>Exportar PDF</span>
+</button>
+
+<!-- PDF MODAL -->
+<div id="pdf-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center">
+  <div style="background:var(--card);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:480px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:15px;font-weight:700;color:var(--ink)">Exportar PDF</div>
+      <button onclick="closePDFModal()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;padding:0 4px">&#x2715;</button>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Seleccioná las secciones</div>
+    <div id="pdf-section-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px"></div>
+    <button id="pdf-generate-btn" onclick="generatePDF()" style="width:100%;background:#1C2B1A;color:#fff;border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      <span id="pdf-gen-icon">&#8681;</span>
+      <span id="pdf-gen-label">Generar PDF</span>
+      <span id="pdf-gen-spinner" style="display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite"></span>
+    </button>
+  </div>
+</div>
+
+<script>
+const IS_DARK = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const CHART_GRID = IS_DARK ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+const CHART_TICK = IS_DARK ? '#7A7A6A' : '#9E9C96';
+const CHART_HARVESTED = IS_DARK ? '#4E8A4D' : '#2D5A27';
+const CHART_REST = IS_DARK ? '#2A3828' : '#C8DBC6';
+const CHART_NEUTRAL = IS_DARK ? '#3A3828' : '#DDD8C4';
+
+let DATA=null, charts={}, activeCrops=new Set(['all']), activeFarms=new Set(['all']), plotFilter='Todos', activeCampaign=null;
+
+
+
+
+
+
+
+// ── RINDE POR CAMPO (tarjetas grandes) ───────────────────────────
+function renderRindePorCampo(farms){
+  const grid = document.getElementById('rinde-farm-grid');
+  if(!grid) return;
+  const entries = Object.entries(farms).filter(([,f])=>f.hh>0).sort((a,b)=>b[1].tot/b[1].hh - a[1].tot/a[1].hh);
+  if(entries.length===0){grid.innerHTML='<div class="no-data" style="grid-column:1/-1">Sin datos cosechados</div>';return;}
+
+  grid.innerHTML = entries.map(([fc,f])=>{
+    const rr = f.tot/f.hh;
+    const re = f.ha>0?(f.est/f.ha):0;
+    const dev = rr-re, devP = re>0?(dev/re*100):0;
+    const pos = dev>=0;
+    const pct = f.ha?(f.hh/f.ha*100):0;
+    const bc = barColor(pct);
+    return `<div class="rinde-farm-card">
+      <div class="rinde-farm-card-name">${fc}</div>
+      <div class="rinde-farm-val" style="color:${pos?'var(--green)':'var(--red)'}">${f2(rr)}</div>
+      <div class="rinde-farm-sub">t/ha · ${f1(rr*10)} qq/ha</div>
+      <div class="rinde-farm-sub" style="color:${pos?'var(--green)':'var(--red)'};font-weight:600;margin-top:2px">${pos?'+':''}${f2(dev)} t/ha (${pos?'+':''}${devP.toFixed(1)}%)</div>
+      <div class="rinde-farm-bar">
+        <div style="background:#E4E2DA;border-radius:4px;height:4px">
+          <div style="width:${Math.min(pct,100).toFixed(1)}%;background:${bc};height:4px;border-radius:4px"></div>
+        </div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:3px">${fP(pct)} cosechado</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── COMPARACIÓN DE CULTIVOS ───────────────────────────────────────
+function renderCropCompare(crops){
+  const el = document.getElementById('crop-compare-section');
+  if(!el) return;
+  const cropEntries = Object.entries(crops);
+  if(cropEntries.length===0){el.innerHTML='';return;}
+
+  // Individual crop cards
+  let html2 = '<div class="crop-compare-grid" style="grid-template-columns:repeat('+Math.min(cropEntries.length,2)+',1fr)">';
+  cropEntries.forEach(([crop,c])=>{
+    const rr = c.hh>0?(c.tot/c.hh):0;
+    const re = c.ha>0?(c.est/c.ha):0;
+    const pct = c.ha?(c.hh/c.ha*100):0;
+    const cc = cropColor(crop);
+    html2 += `<div class="crop-compare-card">
+      <div class="crop-compare-header">
+        <span class="pill ${pillClass(crop)}">${crop}</span>
+        <span style="font-size:12px;font-weight:700;color:${barColor(pct)}">${fP(pct)}</span>
+      </div>
+      <div class="crop-compare-kpis" style="grid-template-columns:repeat(3,1fr)">
+        <div class="cck"><div class="cck-label">HA Total</div><div class="cck-val">${f0(c.ha)}</div></div>
+        <div class="cck"><div class="cck-label">HA Cosechadas</div><div class="cck-val" style="color:var(--green)">${f0(c.hh)}</div></div>
+        <div class="cck"><div class="cck-label">HA Pendientes</div><div class="cck-val" style="color:${c.ha-c.hh>0?'var(--amber)':'var(--green)'}">${f0(Math.max(c.ha-c.hh,0))}</div></div>
+        <div class="cck"><div class="cck-label">Rinde real</div><div class="cck-val" style="color:${cc}">${rr>0?f2(rr):'—'}</div></div>
+        <div class="cck"><div class="cck-label">Rinde est.</div><div class="cck-val">${re>0?f2(re):'—'}</div></div>
+        <div class="cck"><div class="cck-label">Producción</div><div class="cck-val">${f0(c.tot)} t</div></div>
+      </div>
+    </div>`;
+  });
+  html2 += '</div>';
+
+  // Suma si hay 2+ cultivos seleccionados
+  if(!activeCrops.has('all') && activeCrops.size>=2 && cropEntries.length>=2){
+    const totHa=cropEntries.reduce((a,[,c])=>a+c.ha,0);
+    const totHH=cropEntries.reduce((a,[,c])=>a+c.hh,0);
+    const totT=cropEntries.reduce((a,[,c])=>a+c.tot,0);
+    const totEst=cropEntries.reduce((a,[,c])=>a+c.est,0);
+    const totCA=cropEntries.reduce((a,[,c])=>a+c.ca,0);
+    const totEA=cropEntries.reduce((a,[,c])=>a+c.ea,0);
+    const rr=totHH>0?(totT/totHH):0;
+    const pct=totHa?(totHH/totHa*100):0;
+    const names=[...activeCrops].join(' + ');
+    html2 += `<div class="crop-sum-card">
+      <div style="font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Suma: ${names}</div>
+      <div class="crop-compare-kpis">
+        <div class="cck" style="background:rgba(59,122,53,.1)"><div class="cck-label">Ha total</div><div class="cck-val" style="color:var(--green)">${f0(totHa)}</div></div>
+        <div class="cck" style="background:rgba(59,122,53,.1)"><div class="cck-label">Producción</div><div class="cck-val" style="color:var(--green)">${f0(totT)} t</div></div>
+        <div class="cck" style="background:rgba(59,122,53,.1)"><div class="cck-label">Rinde prom.</div><div class="cck-val" style="color:var(--green)">${rr>0?f2(rr):'—'}</div></div>
+        <div class="cck" style="background:rgba(59,122,53,.1)"><div class="cck-label">% Avance</div><div class="cck-val" style="color:var(--green)">${fP(pct)}</div></div>
+        <div class="cck" style="background:rgba(59,122,53,.1)"><div class="cck-label">Ingreso</div><div class="cck-val" style="color:var(--green)">${fM(totCA)}</div></div>
+        <div class="cck" style="background:rgba(59,122,53,.1)"><div class="cck-label">Est. total</div><div class="cck-val" style="color:var(--green)">${f0(totEst)} t</div></div>
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML = html2;
+}
+
+
+// ── COMPARAR CAMPAÑAS ─────────────────────────────────────────────
+function renderComparar(){
+  const el = document.getElementById('comp-content-main');
+  if(!DATA.campaigns){el.innerHTML='<div class="no-data">Sin datos de campañas</div>';return;}
+
+  const names = DATA.campaign_names || Object.keys(DATA.campaigns);
+  if(names.length < 2){
+    el.innerHTML=`
+      <div class="sec-label">Comparación de campañas</div>
+      <div class="coming-soon">
+        <div class="cs-icon">📊</div>
+        <div class="cs-title">Solo hay una campaña cargada</div>
+        <div class="cs-sub">Para comparar campañas, agregá una nueva hoja al Excel con los datos de la siguiente campaña.<br><br>
+        El nombre de la hoja se usa como nombre de la campaña (ej: "Campaña 24/25", "Campaña 25/26").</div>
+      </div>
+      <div class="card" style="padding:16px">
+        <div class="card-head">Cómo agregar una campaña</div>
+        <div style="padding:14px">
+          <div style="font-size:13px;color:var(--ink);line-height:1.7">
+            <b>1.</b> Abrís el Excel <code style="background:var(--bg);padding:1px 5px;border-radius:4px">BASE DE DATOS REPORTE DE COSECHA.xlsx</code><br>
+            <b>2.</b> Renombrás la hoja actual a <code style="background:var(--bg);padding:1px 5px;border-radius:4px">Campaña 25/26</code><br>
+            <b>3.</b> Cuando empiece la próxima, copiás la hoja y la renombrás <code style="background:var(--bg);padding:1px 5px;border-radius:4px">Campaña 26/27</code><br>
+            <b>4.</b> El watcher detecta el cambio y sube ambas campañas<br>
+            <b>5.</b> El dashboard muestra el selector y la comparación automáticamente
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Calcular KPIs por campaña
+  const campStats = names.map(name => {
+    const recs = DATA.campaigns[name] || [];
+    const fa = {}, cr = {};
+    recs.forEach(r => {
+      const fc=r['Farm Code'];
+      if(!fa[fc])fa[fc]={ha:0,hh:0,tot:0,est:0,ca:0,ea:0};
+      fa[fc].ha+=r['Hectares Farmed']||0;
+      fa[fc].hh+=r['Harvested Hectares']||0;
+      fa[fc].tot+=r['Total (t)']||0;
+      fa[fc].est+=r['Est. Total (t)']||0;
+      fa[fc].ca+=r['Current Amount (LCY)']||0;
+      fa[fc].ea+=r['Est. Amount (LCY)']||0;
+    });
+    const fv=Object.values(fa);
+    const totHa=fv.reduce((a,f)=>a+f.ha,0);
+    const totHH=fv.reduce((a,f)=>a+f.hh,0);
+    const totT=fv.reduce((a,f)=>a+f.tot,0);
+    const totEst=fv.reduce((a,f)=>a+f.est,0);
+    const totCA=fv.reduce((a,f)=>a+f.ca,0);
+    const totEA=fv.reduce((a,f)=>a+f.ea,0);
+    return {
+      name, plots:recs.length,
+      totHa, totHH, totT, totEst, totCA, totEA,
+      pctAv: totHa?(totHH/totHa*100):0,
+      rindeReal: totHH>0?(totT/totHH):0,
+      rindeEst: totHa>0?(totEst/totHa):0,
+      farms: fa
+    };
+  });
+
+  // Render comparación
+  let html2 = '<div class="sec-label">Comparación entre campañas</div>';
+
+  // Headers de campañas
+  html2 += '<div style="display:grid;grid-template-columns:repeat('+names.length+',1fr);gap:8px;margin-bottom:10px">';
+  campStats.forEach(s => {
+    html2 += '<div class="kpi ac-green" style="text-align:center"><div class="kpi-label">'+s.name+'</div><div class="kpi-val sm">'+s.plots+' lotes</div><div class="kpi-sub">'+f0(s.totHa)+' ha</div></div>';
+  });
+  html2 += '</div>';
+
+  // KPIs comparados
+  const metrics = [
+    {key:'pctAv',      label:'Avance cosecha', fmt:v=>fP(v)},
+    {key:'totHH',      label:'Ha cosechadas',  fmt:v=>f1(v)+' ha'},
+    {key:'totT',       label:'Producción',      fmt:v=>f0(v)+' t'},
+    {key:'rindeReal',  label:'Rinde real',      fmt:v=>v>0?f2(v)+' t/ha':'—'},
+    {key:'rindeEst',   label:'Rinde estimado',  fmt:v=>v>0?f2(v)+' t/ha':'—'},
+    {key:'totCA',      label:'Ingreso actual',  fmt:v=>fM(v)},
+    {key:'totEA',      label:'Ingreso est.',    fmt:v=>fM(v)},
+  ];
+
+  html2 += '<div class="card" style="margin-bottom:10px"><div class="card-head">KPIs por campaña</div>';
+  metrics.forEach(m => {
+    html2 += '<div style="display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">';
+    html2 += '<div style="font-size:12px;color:var(--ink3);min-width:110px;flex-shrink:0">'+m.label+'</div>';
+    campStats.forEach((s,i) => {
+      const val = s[m.key];
+      const prev = i>0?campStats[i-1][m.key]:null;
+      const delta = prev!==null&&prev!==0?(val-prev):null;
+      const dPos = delta>=0;
+      html2 += '<div style="flex:1;text-align:right">';
+      html2 += '<div style="font-size:13px;font-weight:700;color:var(--ink)">'+m.fmt(val)+'</div>';
+      if(delta!==null&&Math.abs(delta)>0.001){
+        html2 += '<div style="font-size:10px;font-weight:600;color:'+(dPos?'var(--green)':'var(--red)')+'">'+
+          (dPos?'▲':'▼')+' '+m.fmt(Math.abs(delta))+'</div>';
+      }
+      html2 += '</div>';
+    });
+    html2 += '</div>';
+  });
+  html2 += '</div>';
+
+  // Avance por campo comparado
+  const allFarms = [...new Set(campStats.flatMap(s=>Object.keys(s.farms)))].sort();
+  html2 += '<div class="card"><div class="card-head">Avance por establecimiento</div>';
+  allFarms.forEach(fc => {
+    html2 += '<div style="padding:10px 14px;border-bottom:1px solid var(--border)">';
+    html2 += '<div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px">'+fc+'</div>';
+    campStats.forEach(s => {
+      const f = s.farms[fc];
+      if(!f){html2+='<div style="font-size:11px;color:var(--ink3)">'+s.name+': sin datos</div>';return;}
+      const p = f.ha?(f.hh/f.ha*100):0;
+      const bc = p>=80?'var(--green-m)':p>=40?'var(--amber-m)':'var(--blue-m)';
+      html2 += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+      html2 += '<div style="font-size:10px;color:var(--ink3);min-width:80px">'+s.name+'</div>';
+      html2 += '<div style="flex:1;background:#E4E2DA;border-radius:3px;height:4px"><div style="width:'+p.toFixed(1)+'%;background:'+bc+';height:4px;border-radius:3px"></div></div>';
+      html2 += '<div style="font-size:11px;font-weight:700;color:'+bc+';min-width:34px;text-align:right">'+p.toFixed(0)+'%</div>';
+      html2 += '</div>';
+    });
+    html2 += '</div>';
+  });
+  html2 += '</div>';
+
+  el.innerHTML = html2;
+}
+
+
+// ── FILTRO POR CAMPO ──────────────────────────────────────────────
+function toggleFarm(farm, btn){
+  const allBtn=document.querySelector('.ff-btn[data-farm="all"]');
+  if(farm==='all'){
+    activeFarms=new Set(['all']);
+    document.querySelectorAll('.ff-btn').forEach(b=>b.classList.toggle('on',b.dataset.farm==='all'));
+  } else {
+    activeFarms.delete('all');
+    if(allBtn) allBtn.classList.remove('on');
+    if(activeFarms.has(farm)){
+      activeFarms.delete(farm);
+      btn.classList.remove('on');
+      if(activeFarms.size===0){activeFarms.add('all');if(allBtn)allBtn.classList.add('on');}
+    } else {
+      activeFarms.add(farm);
+      btn.classList.add('on');
+    }
+  }
+  renderAll();
+}
+
+// ── SELECTOR DE CAMPAÑA ───────────────────────────────────────────
+
+function safeSet(id, html_content){
+  const el = document.getElementById(id);
+  if(el) el.innerHTML = html_content;
+}
+function safeText(id, text){
+  const el = document.getElementById(id);
+  if(el) el.textContent = text;
+}
+
+function updateCampaignSelector(names){
+  const sel = document.getElementById('campaign-selector');
+  if(!sel) return;
+  if(names.length <= 1){
+    sel.style.display='none';
+    return;
+  }
+  sel.style.display='block';
+  sel.innerHTML = names.map(n =>
+    '<option value="'+n+'"'+(n===activeCampaign?' selected':'')+'>'+n+'</option>'
+  ).join('');
+}
+
+function onCampaignChange(){
+  const sel = document.getElementById('campaign-selector');
+  activeCampaign = sel.value;
+  activeCrops = new Set(['all']); // Reset crop filter on campaign change
+  // Re-init filters for new campaign
+  initFilters();
+  renderAll();
+  showToast('Campaña: '+activeCampaign);
+}
+
+// ── HISTORIAL ─────────────────────────────────────────────────────
+const HISTORY_KEY = 'harvest_history_v1';
+const MAX_HISTORY = 30;
+
+function loadHistory(){
+  try{ return JSON.parse(localStorage.getItem(HISTORY_KEY)||'[]'); }
+  catch(e){ return []; }
+}
+
+function saveHistory(entries){ localStorage.setItem(HISTORY_KEY, JSON.stringify(entries)); }
+
+function recordSnapshot(totHa,totHH,totT,totEst,totCA,totEA,pctAv,rindeReal){
+  const entries = loadHistory();
+  const last = entries[0];
+  const snap = {
+    updated_at: DATA.updated_at,
+    recorded_at: new Date().toISOString(),
+    pctAv: +pctAv.toFixed(2),
+    totHH: +totHH.toFixed(2),
+    totHa: +totHa.toFixed(2),
+    totT: +totT.toFixed(2),
+    totEst: +totEst.toFixed(2),
+    totCA: +totCA.toFixed(0),
+    totEA: +totEA.toFixed(0),
+    rindeReal: +rindeReal.toFixed(3),
+    cropFilter: getCropLabel()
+  };
+  // Only save if data changed
+  if(last && last.updated_at === snap.updated_at && last.cropFilter === snap.cropFilter) return;
+  entries.unshift(snap);
+  if(entries.length > MAX_HISTORY) entries.pop();
+  saveHistory(entries);
+}
+
+function renderHistoria(){
+  const entries = loadHistory();
+  const listEl = document.getElementById('historia-list');
+  const emptyEl = document.getElementById('historia-empty');
+
+  if(entries.length === 0){
+    emptyEl.style.display='block';
+    listEl.innerHTML='';
+    return;
+  }
+  emptyEl.style.display='none';
+
+  listEl.innerHTML = entries.map((snap,i) => {
+    const prev = entries[i+1];
+    const date = new Date(snap.recorded_at);
+    const dateStr = date.toLocaleDateString('es-AR',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'});
+    const timeStr = date.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+
+    // Deltas vs previous
+    const dAvPct = prev ? (snap.pctAv - prev.pctAv) : null;
+    const dHH = prev ? (snap.totHH - prev.totHH) : null;
+    const dT = prev ? (snap.totT - prev.totT) : null;
+    const dRinde = prev ? (snap.rindeReal - prev.rindeReal) : null;
+
+    function delta(val, unit, decimals=1){
+      if(val===null) return '';
+      const pos = val>=0;
+      const color = pos?'var(--green)':'var(--red)';
+      return '<div class="hist-delta" style="color:'+color+'">'+(pos?'+':'')+val.toFixed(decimals)+' '+unit+'</div>';
+    }
+
+    const badge = snap.pctAv>=100
+      ? '<span class="hist-badge" style="background:var(--green-l);color:var(--green)">COMPLETO</span>'
+      : '<span class="hist-badge" style="background:var(--blue-l);color:var(--blue)">EN CURSO</span>';
+
+    return '<div class="hist-item">'+
+      '<div class="hist-header">'+
+        '<div><div class="hist-date">'+dateStr+'</div><div class="hist-time">'+timeStr+' · '+snap.cropFilter+'</div></div>'+
+        badge+
+      '</div>'+
+      '<div class="hist-kpis">'+
+        '<div class="hist-kpi"><div class="hist-kpi-label">Avance</div><div class="hist-kpi-val">'+snap.pctAv.toFixed(1)+'%</div>'+delta(dAvPct,'%')+'</div>'+
+        '<div class="hist-kpi"><div class="hist-kpi-label">Ha cosechadas</div><div class="hist-kpi-val">'+f1(snap.totHH)+' ha</div>'+delta(dHH,'ha')+'</div>'+
+        '<div class="hist-kpi"><div class="hist-kpi-label">Producción</div><div class="hist-kpi-val">'+f0(snap.totT)+' t</div>'+delta(dT,'t',0)+'</div>'+
+        '<div class="hist-kpi"><div class="hist-kpi-label">Rinde</div><div class="hist-kpi-val">'+f2(snap.rindeReal)+' t/ha</div>'+delta(dRinde,'t/ha',2)+'</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function clearHistory(){
+  if(confirm('¿Limpiar todo el historial?')){ saveHistory([]); renderHistoria(); }
+}
+
+// ── EXPORTAR PDF ──────────────────────────────────────────────────
+const PDF_SECTIONS = [
+  {id:'ejecutivo', label:'Resumen Ejecutivo', desc:'KPIs principales, avance global y por establecimiento', icon:'📊'},
+  {id:'rindes',    label:'Rindes',            desc:'Rinde real vs estimado, desvíos por campo y cultivo',  icon:'🌾'},
+  {id:'financiero',label:'Financiero',        desc:'Ingresos, precios, desvío financiero y pendiente',     icon:'💰'},
+  {id:'establecimientos', label:'Establecimientos', desc:'Ficha completa por campo con todos los KPIs',   icon:'🏡'},
+];
+let pdfSelected = new Set(['ejecutivo','rindes','financiero']);
+
+function openPDFModal(){
+  const list = document.getElementById('pdf-section-list');
+  list.innerHTML = PDF_SECTIONS.map(s => `
+    <div class="pdf-section-item" onclick="togglePDFSection('${s.id}')">
+      <div class="pdf-check ${pdfSelected.has(s.id)?'on':''}" id="chk-${s.id}">${pdfSelected.has(s.id)?'&#10003;':''}</div>
+      <div>
+        <div class="pdf-section-name">${s.icon} ${s.label}</div>
+        <div class="pdf-section-desc">${s.desc}</div>
+      </div>
+    </div>`).join('');
+  const modal = document.getElementById('pdf-modal');
+  modal.style.display='flex';
+  setTimeout(()=>{ modal.style.opacity='1'; },10);
+}
+
+function closePDFModal(){
+  document.getElementById('pdf-modal').style.display='none';
+}
+
+function togglePDFSection(id){
+  if(pdfSelected.has(id)) pdfSelected.delete(id);
+  else pdfSelected.add(id);
+  const chk = document.getElementById('chk-'+id);
+  chk.classList.toggle('on', pdfSelected.has(id));
+  chk.innerHTML = pdfSelected.has(id)?'&#10003;':'';
+}
+
+async function generatePDF(){
+  if(pdfSelected.size===0){ showToast('Seleccioná al menos una sección'); return; }
+  const btn = document.getElementById('pdf-generate-btn');
+  document.getElementById('pdf-gen-icon').style.display='none';
+  document.getElementById('pdf-gen-label').textContent='Generando...';
+  document.getElementById('pdf-gen-spinner').style.display='inline-block';
+  btn.style.opacity='.7';
+
+  try{
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pageW=210, pageH=297, margin=12, contentW=210-24;
+
+    const GREEN_D=[29,58,26], GREEN_M=[59,122,53], AMBER=[168,137,58];
+    const GRAY=[100,110,95], LIGHT=[245,242,232], WHITE=[255,255,255];
+    const RED=[139,46,46];
+
+    function setFont(size,weight='normal',color=[30,30,25]){
+      pdf.setFontSize(size); pdf.setFont('helvetica',weight); pdf.setTextColor(...color);
+    }
+    function drawRect(x,y,w,h,color,r=2){
+      pdf.setFillColor(...color); pdf.roundedRect(x,y,w,h,r,r,'F');
+    }
+    function drawBar(x,y,w,h,pct,fill,bg=[220,216,196]){
+      pdf.setFillColor(...bg); pdf.roundedRect(x,y,w,h,1,1,'F');
+      if(pct>0){ pdf.setFillColor(...fill); pdf.roundedRect(x,y,Math.max(w*Math.min(pct,100)/100,1),h,1,1,'F'); }
+    }
+    function drawHeader(pageNum){
+      drawRect(margin,8,contentW,18,GREEN_D,3);
+      setFont(11,'bold',WHITE); pdf.text('INGLEBY FARMS — Reporte de Cosecha 25/26',margin+5,16);
+      setFont(7,'normal',[160,200,155]);
+      pdf.text('Cultivo: '+getCropLabel()+'  |  '+fmtDate(DATA.updated_at),margin+5,22);
+      setFont(7,'normal',[160,200,155]);
+      pdf.text('Pág. '+pageNum, pageW-margin, 22, {align:'right'});
+    }
+    function drawFooter(){
+      pdf.setDrawColor(...GREEN_D); pdf.setLineWidth(0.2);
+      pdf.line(margin,pageH-10,pageW-margin,pageH-10);
+      setFont(6,'normal',GRAY);
+      pdf.text('Ingleby Farms & Forests · Campaña 25/26 · Generado: '+new Date().toLocaleString('es-AR'), margin, pageH-6);
+    }
+
+    const records = getFiltered();
+    const {farms,crops} = aggregate(records);
+    const fv = Object.values(farms);
+    const totHa=fv.reduce((a,f)=>a+f.ha,0), totHH=fv.reduce((a,f)=>a+f.hh,0);
+    const totT=fv.reduce((a,f)=>a+f.tot,0), totEst=fv.reduce((a,f)=>a+f.est,0);
+    const totCA=fv.reduce((a,f)=>a+f.ca,0), totEA=fv.reduce((a,f)=>a+f.ea,0);
+    const totPN=fv.reduce((a,f)=>a+f.pn,0), totPD=fv.reduce((a,f)=>a+f.pd,0);
+    const pctAv=totHa?(totHH/totHa*100):0;
+    const rindeReal=totHH>0?(totT/totHH):0;
+    const rindeEst=totHa>0?(totEst/totHa):0;
+    const ingDesvio=totCA-totEA;
+    const precioPromReal=totPD>0?(totPN/totPD):0;
+    const pendiente=totEA-totCA;
+
+    let pageNum=1, y=30;
+    drawHeader(pageNum); drawFooter();
+
+    function needPage(needed){
+      if(y+needed > pageH-16){
+        pdf.addPage(); pageNum++;
+        drawHeader(pageNum); drawFooter();
+        y=32;
+      }
+    }
+
+    function sectionTitle(title){
+      needPage(12);
+      drawRect(margin,y,contentW,8,GREEN_D,2);
+      setFont(8,'bold',WHITE); pdf.text(title.toUpperCase(),margin+4,y+5.5);
+      y+=12;
+    }
+
+    function kpiBox(x,yy,w,h,label,value,sub,accentColor){
+      drawRect(x,yy,w,h,LIGHT,2);
+      pdf.setFillColor(...accentColor); pdf.rect(x,yy,1.5,h,'F');
+      setFont(6,'bold',GRAY); pdf.text(label.toUpperCase(),x+4,yy+5);
+      setFont(11,'bold',accentColor); pdf.text(value,x+4,yy+12);
+      setFont(6,'normal',GRAY); pdf.text(sub,x+4,yy+17);
+    }
+
+    // ══ EJECUTIVO ══════════════════════════════════════════════
+    if(pdfSelected.has('ejecutivo')){
+      sectionTitle('Resumen Ejecutivo');
+      const kw=(contentW-4)/2, kh=20;
+
+      kpiBox(margin,y,kw,kh,'Avance de cosecha',fP(pctAv),f1(totHH)+' de '+f0(totHa)+' ha',GREEN_M);
+      kpiBox(margin+kw+4,y,kw,kh,'Producción cosechada',f0(totT)+' t','de '+f0(totEst)+' t estimadas',GREEN_D);
+      y+=kh+3;
+      kpiBox(margin,y,kw,kh,'Rinde promedio',f2(rindeReal)+' t/ha',f1(rindeReal*10)+' qq/ha',[80,80,70]);
+      kpiBox(margin+kw+4,y,kw,kh,'Ingreso actual',fM(totCA),(ingDesvio>=0?'+':'')+fM(ingDesvio)+' vs est.',AMBER);
+      y+=kh+6;
+
+      // Barra progreso
+      setFont(7,'bold',GREEN_D); pdf.text('PROGRESO GLOBAL',margin,y); y+=4;
+      drawBar(margin,y,contentW,5,pctAv,GREEN_M); y+=8;
+      setFont(6,'normal',GRAY);
+      pdf.text(f1(totHH)+' ha cosechadas',margin,y);
+      pdf.text(f1(totHa-totHH)+' ha restantes',pageW-margin,y,{align:'right'});
+      y+=8;
+
+      // Establecimientos
+      setFont(7,'bold',GREEN_D); pdf.text('AVANCE POR ESTABLECIMIENTO',margin,y); y+=5;
+      Object.entries(farms).sort((a,b)=>b[1].ha-a[1].ha).forEach(([fc,f])=>{
+        needPage(9);
+        const p=f.ha?(f.hh/f.ha*100):0;
+        const bc2=p>=80?GREEN_M:p>=40?AMBER:[59,107,165];
+        setFont(8,'bold',[30,43,26]); pdf.text(fc,margin,y+3.5);
+        drawBar(margin+18,y,contentW-65,4,p,bc2);
+        setFont(8,'bold',bc2); pdf.text(p.toFixed(1)+'%',margin+18+contentW-65+3,y+3.5);
+        setFont(7,'normal',GRAY); pdf.text(f1(f.hh)+'/'+f1(f.ha)+' ha',pageW-margin,y+3.5,{align:'right'});
+        y+=8;
+      });
+      y+=4;
+    }
+
+    // ══ RINDES ════════════════════════════════════════════════
+    if(pdfSelected.has('rindes')){
+      needPage(20);
+      sectionTitle('Rindes');
+      const desvioAbs=rindeReal-rindeEst, desvioPct=rindeEst>0?(desvioAbs/rindeEst*100):0;
+      const cumplPct=rindeEst>0?(rindeReal/rindeEst*100):0;
+      const dColor=desvioAbs>=0?GREEN_M:RED;
+      const kw=(contentW-8)/3, kh=20;
+
+      kpiBox(margin,y,kw,kh,'Rinde real',f2(rindeReal)+' t/ha',f1(rindeReal*10)+' qq/ha',GREEN_M);
+      kpiBox(margin+kw+4,y,kw,kh,'Rinde estimado',f2(rindeEst)+' t/ha','proyección original',GRAY);
+      kpiBox(margin+kw*2+8,y,kw,kh,'% Cumplimiento',fP(cumplPct),'real vs proyectado',cumplPct>=100?GREEN_M:AMBER);
+      y+=kh+4;
+
+      // Desvío grande
+      drawRect(margin,y,contentW,14,desvioAbs>=0?[232,242,230]:[245,230,230],2);
+      setFont(7,'bold',dColor); pdf.text('DESVÍO DE RINDE',margin+4,y+5);
+      setFont(11,'bold',dColor);
+      pdf.text((desvioAbs>=0?'+':'')+f2(desvioAbs)+' t/ha  ('+(desvioAbs>=0?'+':'')+desvioPct.toFixed(1)+'%)',margin+4,y+11);
+      y+=18;
+
+      // Por establecimiento
+      setFont(7,'bold',GREEN_D); pdf.text('DESVÍO POR ESTABLECIMIENTO',margin,y); y+=5;
+      Object.entries(farms).sort((a,b)=>b[1].hh-a[1].hh).forEach(([fc,f])=>{
+        needPage(10);
+        if(f.hh===0){
+          setFont(7,'normal',GRAY); pdf.text(fc+': Sin cosechar',margin,y+3); y+=7; return;
+        }
+        const rr=f.tot/f.hh, re=f.est/f.ha, dev=rr-re, devP=re>0?(dev/re*100):0;
+        const dc=dev>=0?GREEN_M:RED;
+        setFont(8,'bold',[30,43,26]); pdf.text(fc,margin,y+4);
+        setFont(8,'bold',dc); pdf.text((dev>=0?'+':'')+f2(dev)+' t/ha ('+(dev>=0?'+':'')+devP.toFixed(1)+'%)',margin+20,y+4);
+        setFont(7,'normal',GRAY);
+        pdf.text('Real: '+f2(rr)+'  Est: '+f2(re)+'  Prod: '+f0(f.tot)+' t',margin+20,y+8.5);
+        y+=12;
+      });
+
+      // Por cultivo
+      needPage(20);
+      setFont(7,'bold',GREEN_D); pdf.text('RINDE POR CULTIVO',margin,y); y+=5;
+      const cropW=(contentW-6)/Math.min(Object.keys(crops).length,4);
+      Object.entries(crops).forEach(([crop,c],i)=>{
+        const rr=c.hh>0?(c.tot/c.hh):0, re=c.ha>0?(c.est/c.ha):0;
+        const x2=margin+i*cropW;
+        drawRect(x2,y,cropW-3,22,LIGHT,2);
+        setFont(7,'bold',GREEN_D); pdf.text(crop,x2+3,y+6,{maxWidth:cropW-6});
+        setFont(8,'bold',GREEN_M); pdf.text(rr>0?f2(rr)+' t/ha':'—',x2+3,y+13);
+        setFont(6,'normal',GRAY); pdf.text('Est: '+f2(re),x2+3,y+18);
+      });
+      y+=28;
+    }
+
+    // ══ FINANCIERO ════════════════════════════════════════════
+    if(pdfSelected.has('financiero')){
+      needPage(20);
+      sectionTitle('Financiero');
+      const kw=(contentW-4)/2, kh=20;
+      const pctCobrado=totEA>0?(totCA/totEA*100):0;
+      const ingHa=totHH>0?(totCA/totHH):0;
+
+      kpiBox(margin,y,kw,kh,'Ingreso real',fM(totCA),'LCY facturado',AMBER);
+      kpiBox(margin+kw+4,y,kw,kh,'Ingreso estimado',fM(totEA),'LCY proyectado',GRAY);
+      y+=kh+3;
+      kpiBox(margin,y,kw,kh,'Pendiente de cobro',fM(pendiente),'LCY por cosechar',[83,74,183]);
+      kpiBox(margin+kw+4,y,kw,kh,'Ingreso / ha cosech.',precioPromReal>0?'$'+f1(precioPromReal):'—','LCY por ha',GRAY);
+      y+=kh+4;
+
+      // Desvío ingreso
+      const iColor=ingDesvio>=0?GREEN_M:RED;
+      drawRect(margin,y,contentW,14,ingDesvio>=0?[232,242,230]:[245,230,230],2);
+      setFont(7,'bold',iColor); pdf.text('DESVÍO DE INGRESO',margin+4,y+5);
+      setFont(11,'bold',iColor);
+      pdf.text((ingDesvio>=0?'+':'')+fM(ingDesvio)+'  ('+(ingDesvio>=0?'+':'')+(totEA>0?(ingDesvio/totEA*100).toFixed(1):0)+'%)',margin+4,y+11);
+      y+=18;
+
+      // Barra cobrado
+      setFont(7,'bold',GREEN_D); pdf.text('% COBRADO DEL TOTAL ESTIMADO',margin,y); y+=4;
+      drawBar(margin,y,contentW,5,pctCobrado,AMBER); y+=8;
+      setFont(6,'normal',GRAY);
+      pdf.text(fM(totCA)+' cobrados de '+fM(totEA)+' estimados',margin,y);
+      pdf.text(pctCobrado.toFixed(1)+'%',pageW-margin,y,{align:'right'});
+      y+=10;
+    }
+
+    // ══ ESTABLECIMIENTOS ══════════════════════════════════════
+    if(pdfSelected.has('establecimientos')){
+      needPage(20);
+      sectionTitle('Establecimientos');
+      Object.entries(farms).sort((a,b)=>b[1].ha-a[1].ha).forEach(([fc,f])=>{
+        needPage(32);
+        const p=f.ha?(f.hh/f.ha*100):0;
+        const rinde=f.hh>0?(f.tot/f.hh):null;
+        const re=f.ha>0?(f.est/f.ha):null;
+        const dev=rinde&&re?(rinde-re):null, devP=dev&&re?(dev/re*100):null;
+        const bc2=p>=80?GREEN_M:p>=40?AMBER:[59,107,165];
+
+        drawRect(margin,y,contentW,28,LIGHT,2);
+        setFont(11,'bold',GREEN_D); pdf.text(fc,margin+4,y+8);
+        setFont(8,'bold',bc2); pdf.text(p.toFixed(1)+'%',margin+contentW-20,y+8,{align:'right'});
+        drawBar(margin+4,y+10,contentW-8,3,p,bc2);
+
+        setFont(7,'normal',GRAY);
+        pdf.text('Ha total: '+f1(f.ha),margin+4,y+17);
+        pdf.text('Cosechado: '+f1(f.hh)+' ha',margin+50,y+17);
+        pdf.text('Prod: '+f0(f.tot)+' t',margin+105,y+17);
+        pdf.text('Est: '+f0(f.est)+' t',margin+145,y+17);
+        if(rinde) pdf.text('Rinde: '+f2(rinde)+' t/ha',margin+4,y+22);
+        if(dev!==null) pdf.text('Desvío: '+(dev>=0?'+':'')+f2(dev)+' t/ha ('+(dev>=0?'+':'')+devP.toFixed(1)+'%)',margin+50,y+22);
+        if(f.ca>0) pdf.text('Ingreso: '+fM(f.ca),margin+4,y+27);
+        y+=32;
+      });
+    }
+
+    const date=new Date().toISOString().slice(0,10);
+    const sections=[...pdfSelected].join('-');
+    pdf.save('Cosecha_25-26_'+sections+'_'+date+'.pdf');
+    showToast('✓ PDF generado ('+pageNum+' pág.)');
+    closePDFModal();
+
+  } catch(e){
+    console.error(e);
+    showToast('Error al generar PDF');
+  }
+
+  document.getElementById('pdf-gen-icon').style.display='inline';
+  document.getElementById('pdf-gen-label').textContent='Generar PDF';
+  document.getElementById('pdf-gen-spinner').style.display='none';
+  document.getElementById('pdf-generate-btn').style.opacity='1';
+}
+
+
+// ── ANIMACIONES ───────────────────────────────────────────────────
+function animateCount(el, target, duration, formatter){
+  if(!el) return;
+  const start = performance.now();
+  const isFloat = target % 1 !== 0;
+  function step(now){
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // Ease out cubic
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = target * ease;
+    el.textContent = formatter(current);
+    if(progress < 1) requestAnimationFrame(step);
+    else el.textContent = formatter(target);
+  }
+  requestAnimationFrame(step);
+}
+
+function animateEl(el, delay=0){
+  if(!el) return;
+  el.style.opacity='0';
+  el.style.transform='translateY(8px)';
+  setTimeout(()=>{
+    el.style.transition='opacity .4s ease, transform .4s ease';
+    el.style.opacity='1';
+    el.style.transform='translateY(0)';
+  }, delay);
+}
+
+// ── EJECUTIVO ─────────────────────────────────────────────────────
+function renderEjecutivo(farms,totHa,totHH,totT,totEst,totCA,totEA,pctAv){
+  const el2=document.getElementById('exec-loading');if(el2)el2.style.display='none';
+  const ec=document.getElementById('exec-content');if(ec)ec.style.display='block';
+  const rindeReal=totHH>0?(totT/totHH):0;
+  const rindeEst=totHa>0?(totEst/totHa):0;
+  const ingDesvio=totCA-totEA;
+  const dPos=ingDesvio>=0;
+  const bc=pctAv>=80?'var(--green-m)':pctAv>=40?'var(--amber-m)':'var(--blue-m)';
+
+  // Banner
+  const eb=document.getElementById('exec-banner');
+  if(!activeCrops.has('all')){
+    const pills=[...activeCrops].map(c=>'<span class="pill '+pillClass(c)+'">'+c+'</span>').join(' ');
+    eb.innerHTML='<div class="crop-banner" style="margin-bottom:8px"><div><div class="crop-banner-label">Mostrando</div><div class="crop-banner-value">'+getCropLabel()+'</div></div><div style="display:flex;gap:4px;flex-wrap:wrap">'+pills+'</div></div>';
+  } else { eb.innerHTML=''; }
+
+  // 4 KPIs
+  document.getElementById('exec-kpis').innerHTML=
+    '<div class="exec-kpi"><div><div class="exec-kpi-label">Avance de cosecha</div><div class="exec-kpi-val" style="color:'+(pctAv>=80?'var(--green)':pctAv>=40?'var(--amber)':'var(--blue)')+'">'+fP(pctAv)+'</div><div class="exec-kpi-sub">'+f1(totHH)+' de '+f0(totHa)+' ha</div></div><div class="exec-kpi-icon">&#127806;</div></div>'+
+    '<div class="exec-kpi"><div><div class="exec-kpi-label">Producción cosechada</div><div class="exec-kpi-val" style="color:var(--green)">'+f0(totT)+' t</div><div class="exec-kpi-sub">de '+f0(totEst)+' t estimadas</div></div><div class="exec-kpi-icon">&#128230;</div></div>'+
+    '<div class="exec-kpi"><div style="flex:1"><div class="exec-kpi-label">Rinde promedio</div><div class="exec-kpi-val" style="color:var(--ink)">'+f2(rindeReal)+'<span style="font-size:15px;font-weight:500;color:var(--ink3)"> t/ha</span></div><div class="exec-kpi-sub">'+f1(rindeReal*10)+' qq/ha</div></div><div style="text-align:right"><div style="font-size:13px;color:var(--ink3);margin-bottom:2px">Est. '+f2(rindeEst)+' t/ha</div><div style="font-size:26px;font-weight:700;line-height:1;color:'+(rindeReal>=rindeEst?'var(--green)':'var(--red)')+'\">'+(rindeEst>0?((rindeReal>=rindeEst?'+':'')+f2(rindeReal-rindeEst)+' t/ha'):'—')+'</div><div style="font-size:13px;color:'+(rindeReal>=rindeEst?'var(--green)':'var(--red)')+'\">'+(rindeEst>0?((rindeReal>=rindeEst?'+':'')+((rindeReal-rindeEst)/rindeEst*100).toFixed(1)+'%'):'—')+'</div></div></div>'+
+    '<div class="exec-kpi"><div><div class="exec-kpi-label">Ingreso actual</div><div class="exec-kpi-val" style="color:var(--amber);font-size:24px">'+fM(totCA)+'</div><div class="exec-kpi-sub" style="color:'+(dPos?'var(--green)':'var(--red)')+'">'+sign(ingDesvio)+fM(ingDesvio)+' vs est.</div></div><div class="exec-kpi-icon">&#128176;</div></div>';
+
+  // Progreso
+  document.getElementById('exec-progress').innerHTML=
+    '<div class="exec-prog"><div class="exec-prog-top"><div class="exec-prog-title">Progreso global</div><div class="exec-prog-pct" style="color:'+bc+'">'+fP(pctAv)+'</div></div><div class="exec-prog-bar"><div class="exec-prog-fill" style="width:'+Math.min(pctAv,100).toFixed(1)+'%;background:'+bc+'"></div></div><div class="exec-prog-meta"><span>'+f1(totHH)+' ha cosechadas</span><span>'+f1(totHa-totHH)+' ha restantes</span></div></div>';
+
+  // Estab
+  const fe=Object.entries(farms).sort((a,b)=>b[1].ha-a[1].ha);
+  document.getElementById('exec-farms').innerHTML='<div class="card-head">Avance por establecimiento</div>'+
+    fe.map(([fc,f])=>{
+      const p=f.ha?(f.hh/f.ha*100):0;
+      const c2=p>=80?'var(--green-m)':p>=40?'var(--amber-m)':'var(--blue-m)';
+      return '<div class="ufarm-row">'+
+        '<div class="ufarm-header">'+
+          '<div class="ufarm-name">'+fc+'</div>'+
+          '<div style="display:flex;align-items:center;gap:10px">'+
+            '<div class="ufarm-ha">'+f1(f.hh)+' / '+f1(f.ha)+' ha</div>'+
+            '<div class="ufarm-pct" style="color:'+c2+'">'+Math.round(p)+'%</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="ufarm-bar-wrap"><div class="ufarm-bar" style="width:'+Math.min(p,100).toFixed(1)+'%;background:'+c2+'"></div></div>'+
+      '</div>';
+    }).join('');
+
+  document.getElementById('exec-ts').textContent='Datos al: '+fmtDate(DATA.updated_at);
+
+  // Animate KPI cards
+  const kpiCards = document.querySelectorAll('#exec-kpis .exec-kpi');
+  kpiCards.forEach((card,i) => animateEl(card, i*80));
+
+  // Animate progress bar
+  animateEl(document.getElementById('exec-progress'), 320);
+
+  // Animate farm rows
+  const farmRows = document.querySelectorAll('#exec-farms .exec-farm-row');
+  farmRows.forEach((row,i) => animateEl(row, 400 + i*50));
+
+  // Count up the KPI values
+  setTimeout(()=>{
+    // Avance %
+    const elAv = document.querySelector('#exec-kpis .exec-kpi:nth-child(1) .exec-kpi-val');
+    if(elAv) animateCount(elAv, pctAv, 800, v => v.toFixed(1)+'%');
+
+    // Produccion t
+    const elT = document.querySelector('#exec-kpis .exec-kpi:nth-child(2) .exec-kpi-val');
+    if(elT) animateCount(elT, totT, 900, v => Math.round(v).toLocaleString('es-AR')+' t');
+
+    // Rinde
+    const elR = document.querySelector('#exec-kpis .exec-kpi:nth-child(3) .exec-kpi-val');
+    if(elR) animateCount(elR, rindeReal, 900, v => v.toFixed(2)+'\u200a t/ha');
+
+    // Progreso pct grande
+    const elProg = document.querySelector('.exec-prog-pct');
+    if(elProg) animateCount(elProg, pctAv, 1000, v => v.toFixed(1)+'%');
+
+    // Progress bar width
+    const bar = document.querySelector('.exec-prog-fill');
+    if(bar){
+      bar.style.width='0%';
+      bar.style.transition='width 1s ease';
+      setTimeout(()=>{ bar.style.width=Math.min(pctAv,100).toFixed(1)+'%'; },50);
+    }
+
+    // Farm bars
+    document.querySelectorAll('.exec-farm-bar').forEach(b=>{
+      const target = b.style.width;
+      b.style.width='0%';
+      b.style.transition='width .8s ease';
+      setTimeout(()=>{ b.style.width=target; },100);
+    });
+  }, 80);
+
+}
+
+// ── FETCH ────────────────────────────────────────────────────────
+const EMBEDDED_DATA = {"updated_at": "2026-04-14T15:31:00Z", "source_file": "BASE DE DATOS REPORTE DE COSECHA.xlsx", "campaigns": {"Campaña 25/26": [{"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 10 Y 11", "Hectares Farmed": 69.92, "Harvested Hectares": 0.0, "Hectares Remaining": 69.92, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 174.8, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 62928.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 11 PISTA", "Hectares Farmed": 24.07, "Harvested Hectares": 0.0, "Hectares Remaining": 24.07, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 60.175, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 21663.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 15A", "Hectares Farmed": 53.71, "Harvested Hectares": 0.0, "Hectares Remaining": 53.71, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 134.275, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 48339.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 17", "Hectares Farmed": 22.0, "Harvested Hectares": 0.0, "Hectares Remaining": 22.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 55.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 19800.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 19", "Hectares Farmed": 34.76, "Harvested Hectares": 0.0, "Hectares Remaining": 34.76, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 86.9, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 31284.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 2 ARRIBA AGRICOLA", "Hectares Farmed": 16.0, "Harvested Hectares": 0.0, "Hectares Remaining": 16.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 40.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 14400.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 2 ARRIBA COBERTUR", "Hectares Farmed": 45.08, "Harvested Hectares": 0.0, "Hectares Remaining": 45.08, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 112.7, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 40572.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 2 ARRIBA PRADERA", "Hectares Farmed": 20.0, "Harvested Hectares": 0.0, "Hectares Remaining": 20.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 50.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 18000.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 2 MORIA", "Hectares Farmed": 11.7, "Harvested Hectares": 0.0, "Hectares Remaining": 11.7, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 29.25, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 10530.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 23 CALLE", "Hectares Farmed": 34.0, "Harvested Hectares": 0.0, "Hectares Remaining": 34.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 85.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 30600.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 23 MEDIO", "Hectares Farmed": 28.2, "Harvested Hectares": 0.0, "Hectares Remaining": 28.2, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 70.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 25380.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 23 QUEMADO", "Hectares Farmed": 26.6, "Harvested Hectares": 0.0, "Hectares Remaining": 26.6, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 66.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 23940.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 24", "Hectares Farmed": 59.06, "Harvested Hectares": 0.0, "Hectares Remaining": 59.06, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 147.65, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 53154.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 3 ABAJO CHACRA", "Hectares Farmed": 68.0, "Harvested Hectares": 0.0, "Hectares Remaining": 68.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 170.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 61200.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 3 ABAJO PASTURA", "Hectares Farmed": 8.0, "Harvested Hectares": 0.0, "Hectares Remaining": 8.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 20.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 7200.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 3 ARRIBA", "Hectares Farmed": 35.0, "Harvested Hectares": 0.0, "Hectares Remaining": 35.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 87.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 31500.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 3 ARRIBA PRADERA", "Hectares Farmed": 15.0, "Harvested Hectares": 0.0, "Hectares Remaining": 15.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 37.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 13500.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 5 CALLE", "Hectares Farmed": 50.0, "Harvested Hectares": 0.0, "Hectares Remaining": 50.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 125.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 45000.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 7Y8", "Hectares Farmed": 113.27, "Harvested Hectares": 0.0, "Hectares Remaining": 113.27, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 283.175, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 101943.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "EO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "EO 9", "Hectares Farmed": 70.43, "Harvested Hectares": 0.0, "Hectares Remaining": 70.43, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 176.075, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 63387.0, "Job No.": "EO SOJA 1RA 25/26"}, {"Farm Code": "LO", "Job Crop": "MAIZ RIEGO", "Irrigated": "Yes", "Plot Code": "LO P3W", "Hectares Farmed": 59.0, "Harvested Hectares": 31.5, "Hectares Remaining": 27.5, "Total (t)": 420.95, "Yield to Date (t/ha)": 13.363492063492064, "Est. Yield (t/Ha)": 12.59, "Est. Total (t)": 742.81, "Diff. Yield (%)": 106.0, "Current Price (LCY)": 224.0, "Current Amount (LCY)": 94292.8, "Est. Price (LCY)": 200.0, "Est. Amount (LCY)": 148562.0, "Job No.": "LO MAIZ R 25/26"}, {"Farm Code": "LO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LO 1", "Hectares Farmed": 122.5, "Harvested Hectares": 0.0, "Hectares Remaining": 122.5, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 306.25, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 110250.0, "Job No.": "LO SOJA 1RA S 25/26"}, {"Farm Code": "LO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LO 11", "Hectares Farmed": 60.8, "Harvested Hectares": 0.0, "Hectares Remaining": 60.8, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 152.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 54720.0, "Job No.": "LO SOJA 1RA S 25/26"}, {"Farm Code": "LO", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LO 12-13", "Hectares Farmed": 56.8, "Harvested Hectares": 0.0, "Hectares Remaining": 56.8, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 142.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 51120.0, "Job No.": "LO SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "MAIZ", "Irrigated": "No", "Plot Code": "LR P11.1 SECANO", "Hectares Farmed": 1.38, "Harvested Hectares": 0.0, "Hectares Remaining": 1.38, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 4.5, "Est. Total (t)": 6.21, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 200.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 200.0, "Est. Amount (LCY)": 1242.0, "Job No.": "LR MAIZ S 25/26"}, {"Farm Code": "LR", "Job Crop": "MAIZ", "Irrigated": "No", "Plot Code": "LR P12.1 SECANO", "Hectares Farmed": 0.9, "Harvested Hectares": 0.0, "Hectares Remaining": 0.9, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 4.5, "Est. Total (t)": 4.05, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 200.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 200.0, "Est. Amount (LCY)": 810.0, "Job No.": "LR MAIZ S 25/26"}, {"Farm Code": "LR", "Job Crop": "MAIZ", "Irrigated": "No", "Plot Code": "LR P4 SECANO", "Hectares Farmed": 0.84, "Harvested Hectares": 0.0, "Hectares Remaining": 0.84, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 4.5, "Est. Total (t)": 3.78, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 200.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 200.0, "Est. Amount (LCY)": 756.0, "Job No.": "LR MAIZ S 25/26"}, {"Farm Code": "LR", "Job Crop": "MAIZ", "Irrigated": "No", "Plot Code": "LR P5.1 SECANO", "Hectares Farmed": 6.4, "Harvested Hectares": 0.0, "Hectares Remaining": 6.4, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 4.5, "Est. Total (t)": 28.8, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 200.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 200.0, "Est. Amount (LCY)": 5760.0, "Job No.": "LR MAIZ S 25/26"}, {"Farm Code": "LR", "Job Crop": "MAIZ", "Irrigated": "No", "Plot Code": "LR P6.1 SECANO", "Hectares Farmed": 0.45, "Harvested Hectares": 0.0, "Hectares Remaining": 0.45, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 4.5, "Est. Total (t)": 2.025, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 200.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 200.0, "Est. Amount (LCY)": 405.0, "Job No.": "LR MAIZ S 25/26"}, {"Farm Code": "LR", "Job Crop": "MAIZ", "Irrigated": "No", "Plot Code": "LR P7 SECANO", "Hectares Farmed": 9.9, "Harvested Hectares": 0.0, "Hectares Remaining": 9.9, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 4.5, "Est. Total (t)": 44.55, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 200.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 200.0, "Est. Amount (LCY)": 8910.0, "Job No.": "LR MAIZ S 25/26"}, {"Farm Code": "LR", "Job Crop": "MAIZ", "Irrigated": "No", "Plot Code": "LR P8 SECANO", "Hectares Farmed": 0.34, "Harvested Hectares": 0.0, "Hectares Remaining": 0.34, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 4.5, "Est. Total (t)": 1.53, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 200.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 200.0, "Est. Amount (LCY)": 306.0, "Job No.": "LR MAIZ S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR 17", "Hectares Farmed": 33.34, "Harvested Hectares": 0.0, "Hectares Remaining": 33.34, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 83.35, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 30006.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR 31", "Hectares Farmed": 23.9, "Harvested Hectares": 0.0, "Hectares Remaining": 23.9, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 59.75, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 21510.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR 35", "Hectares Farmed": 36.9, "Harvested Hectares": 0.0, "Hectares Remaining": 36.9, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 92.25, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 33210.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P0.1 SECANO", "Hectares Farmed": 14.73, "Harvested Hectares": 0.0, "Hectares Remaining": 14.73, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 36.825, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 13257.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P10 SECANO", "Hectares Farmed": 10.0, "Harvested Hectares": 0.0, "Hectares Remaining": 10.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 25.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 9000.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P10.1 SECANO", "Hectares Farmed": 21.68, "Harvested Hectares": 0.0, "Hectares Remaining": 21.68, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 54.2, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 19512.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P11 SECANO", "Hectares Farmed": 6.19, "Harvested Hectares": 0.0, "Hectares Remaining": 6.19, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 15.475, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 5571.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P11.1 SECANO", "Hectares Farmed": 6.19, "Harvested Hectares": 0.0, "Hectares Remaining": 6.19, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 15.475, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 5571.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P13 SECANO", "Hectares Farmed": 5.71, "Harvested Hectares": 0.0, "Hectares Remaining": 5.71, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 14.275, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 5139.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P13.1 SECANO", "Hectares Farmed": 13.16, "Harvested Hectares": 0.0, "Hectares Remaining": 13.16, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 32.9, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 11844.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P15 SECANO", "Hectares Farmed": 14.92, "Harvested Hectares": 0.0, "Hectares Remaining": 14.92, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 37.3, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 13428.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P2 SECANO", "Hectares Farmed": 27.4, "Harvested Hectares": 0.0, "Hectares Remaining": 27.4, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 68.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 24660.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P3 SECANO", "Hectares Farmed": 20.7, "Harvested Hectares": 0.0, "Hectares Remaining": 20.7, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 51.75, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 18630.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P3.1 SECANO", "Hectares Farmed": 4.63, "Harvested Hectares": 0.0, "Hectares Remaining": 4.63, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 11.575, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 4167.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P4 SECANO", "Hectares Farmed": 7.3, "Harvested Hectares": 0.0, "Hectares Remaining": 7.3, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 18.25, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 6570.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P4.1 SECANO", "Hectares Farmed": 28.05, "Harvested Hectares": 0.0, "Hectares Remaining": 28.05, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 70.125, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 25245.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P5 SECANO", "Hectares Farmed": 45.78, "Harvested Hectares": 0.0, "Hectares Remaining": 45.78, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 114.45, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 41202.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P7 SECANO", "Hectares Farmed": 1.8, "Harvested Hectares": 0.0, "Hectares Remaining": 1.8, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 4.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 1620.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "LR P8.1 SECANO", "Hectares Farmed": 7.32, "Harvested Hectares": 0.0, "Hectares Remaining": 7.32, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 18.3, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 6588.0, "Job No.": "LR SOJA 1RA S 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA RIEGO", "Irrigated": "Yes", "Plot Code": "LR P13.1", "Hectares Farmed": 48.78, "Harvested Hectares": 24.0, "Hectares Remaining": 24.78, "Total (t)": 61.12, "Yield to Date (t/ha)": 2.546666666666667, "Est. Yield (t/Ha)": 0.0, "Est. Total (t)": 0.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 0.0, "Est. Amount (LCY)": 0.0, "Job No.": "LR SOJA TEMP R 25/26"}, {"Farm Code": "LR", "Job Crop": "SOJA RIEGO", "Irrigated": "Yes", "Plot Code": "LR P15", "Hectares Farmed": 27.52, "Harvested Hectares": 0.0, "Hectares Remaining": 27.52, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 0.0, "Est. Total (t)": 0.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 0.0, "Est. Amount (LCY)": 0.0, "Job No.": "LR SOJA1RA R 25/26"}, {"Farm Code": "ME", "Job Crop": "MAIZ RIEGO", "Irrigated": "Yes", "Plot Code": "ME P1.1 R", "Hectares Farmed": 21.5, "Harvested Hectares": 21.5, "Hectares Remaining": 0.0, "Total (t)": 323.014, "Yield to Date (t/ha)": 15.023906976744186, "Est. Yield (t/Ha)": 13.5, "Est. Total (t)": 290.25, "Diff. Yield (%)": 111.0, "Current Price (LCY)": 224.0, "Current Amount (LCY)": 72355.136, "Est. Price (LCY)": 200.0, "Est. Amount (LCY)": 58050.0, "Job No.": "ME MAIZ RIEGO 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME 17", "Hectares Farmed": 3.0, "Harvested Hectares": 0.0, "Hectares Remaining": 3.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 7.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 2700.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME CERRO", "Hectares Farmed": 23.0, "Harvested Hectares": 0.0, "Hectares Remaining": 23.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 57.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 20700.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME CERRO FONDO", "Hectares Farmed": 34.9, "Harvested Hectares": 0.0, "Hectares Remaining": 34.9, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 87.25, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 31410.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME P1.1 S", "Hectares Farmed": 30.5, "Harvested Hectares": 0.0, "Hectares Remaining": 30.5, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 76.25, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 27450.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME P3.1 S", "Hectares Farmed": 31.5, "Harvested Hectares": 0.0, "Hectares Remaining": 31.5, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 78.75, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 28350.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME P3.2 S", "Hectares Farmed": 18.4, "Harvested Hectares": 0.0, "Hectares Remaining": 18.4, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 46.0, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 16560.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME P4.2 S", "Hectares Farmed": 10.25, "Harvested Hectares": 0.0, "Hectares Remaining": 10.25, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 25.625, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 9225.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME P5.1 S", "Hectares Farmed": 25.5, "Harvested Hectares": 0.0, "Hectares Remaining": 25.5, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 63.75, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 22950.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME P5.2 S", "Hectares Farmed": 7.0, "Harvested Hectares": 0.0, "Hectares Remaining": 7.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 17.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 6300.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "ME", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "ME PIQUETE", "Hectares Farmed": 11.0, "Harvested Hectares": 0.0, "Hectares Remaining": 11.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 27.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 9900.0, "Job No.": "ME SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 14", "Hectares Farmed": 46.5, "Harvested Hectares": 0.0, "Hectares Remaining": 46.5, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 116.25, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 41850.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 15", "Hectares Farmed": 49.42, "Harvested Hectares": 0.0, "Hectares Remaining": 49.42, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 123.55, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 44478.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 16", "Hectares Farmed": 25.4, "Harvested Hectares": 0.0, "Hectares Remaining": 25.4, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 63.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 22860.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 17", "Hectares Farmed": 58.9, "Harvested Hectares": 0.0, "Hectares Remaining": 58.9, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 147.25, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 53010.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 18", "Hectares Farmed": 23.46, "Harvested Hectares": 0.0, "Hectares Remaining": 23.46, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 58.65, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 21114.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 19", "Hectares Farmed": 64.51, "Harvested Hectares": 0.0, "Hectares Remaining": 64.51, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 161.275, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 58059.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 22CH", "Hectares Farmed": 21.3, "Harvested Hectares": 0.0, "Hectares Remaining": 21.3, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 53.25, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 19170.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 23", "Hectares Farmed": 26.34, "Harvested Hectares": 0.0, "Hectares Remaining": 26.34, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 65.85, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 23706.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 48", "Hectares Farmed": 47.5, "Harvested Hectares": 0.0, "Hectares Remaining": 47.5, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 118.75, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 42750.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "RT", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "RT 7 Y 8", "Hectares Farmed": 111.78, "Harvested Hectares": 0.0, "Hectares Remaining": 111.78, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 279.45, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 100602.0, "Job No.": "RT SOJA 1RA 25/26"}, {"Farm Code": "SF", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "SF 10", "Hectares Farmed": 39.52, "Harvested Hectares": 0.0, "Hectares Remaining": 39.52, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 98.8, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 35568.0, "Job No.": "SF SOJA 1RA 25/26"}, {"Farm Code": "SF", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "SF 11", "Hectares Farmed": 39.8, "Harvested Hectares": 0.0, "Hectares Remaining": 39.8, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 99.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 35820.0, "Job No.": "SF SOJA 1RA 25/26"}, {"Farm Code": "SF", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "SF 12 RUTA", "Hectares Farmed": 59.71, "Harvested Hectares": 0.0, "Hectares Remaining": 59.71, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 149.275, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 53739.0, "Job No.": "SF SOJA 1RA 25/26"}, {"Farm Code": "SF", "Job Crop": "SOJA", "Irrigated": "Yes", "Plot Code": "SF 3A", "Hectares Farmed": 75.0, "Harvested Hectares": 0.0, "Hectares Remaining": 75.0, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 187.5, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 67500.0, "Job No.": "SF SOJA 1RA 25/26"}, {"Farm Code": "SF", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "SF 9 GRANDE", "Hectares Farmed": 83.92, "Harvested Hectares": 0.0, "Hectares Remaining": 83.92, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 209.8, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 75528.0, "Job No.": "SF SOJA 1RA 25/26"}, {"Farm Code": "SF", "Job Crop": "SOJA", "Irrigated": "No", "Plot Code": "SF 9 PASTOREO", "Hectares Farmed": 50.35, "Harvested Hectares": 0.0, "Hectares Remaining": 50.35, "Total (t)": 0.0, "Yield to Date (t/ha)": 0.0, "Est. Yield (t/Ha)": 2.5, "Est. Total (t)": 125.875, "Diff. Yield (%)": 0.0, "Current Price (LCY)": 0.0, "Current Amount (LCY)": 0.0, "Est. Price (LCY)": 360.0, "Est. Amount (LCY)": 45315.0, "Job No.": "SF SOJA 1RA 25/26"}]}, "campaign_names": ["Campaña 25/26"], "total_plots": 79};
+
+async function loadData(){
+  try{
+    const r=await fetch('/api/data?t='+Date.now());
+    if(!r.ok)throw new Error(r.status);
+    DATA=await r.json();
+    if(!DATA.campaigns && DATA.records){
+      DATA.campaigns={'Campaña 25-26':DATA.records};
+      DATA.campaign_names=['Campaña 25-26'];
+    }
+    activeCampaign = DATA.campaign_names ? DATA.campaign_names[DATA.campaign_names.length-1] : 'Campaña 25-26';
+    // Multi-campaign support
+    if(DATA.campaigns && !DATA.records){
+      const names = DATA.campaign_names || Object.keys(DATA.campaigns);
+      if(!activeCampaign || !DATA.campaigns[activeCampaign]){
+        activeCampaign = names[names.length-1]; // Default: última campaña
+      }
+      updateCampaignSelector(names);
+    } else if(DATA.records){
+      DATA.campaigns = {'Campaña actual': DATA.records};
+      DATA.campaign_names = ['Campaña actual'];
+      activeCampaign = 'Campaña actual';
+    }
+    initFilters();
+    renderAll();
+  }catch(e){
+    console.warn('API failed, using embedded data:', e);
+    DATA = EMBEDDED_DATA;
+    if(!DATA.campaigns && DATA.records){
+      DATA.campaigns={'Campaña 25-26':DATA.records};
+      DATA.campaign_names=['Campaña 25-26'];
+    }
+  }
+  if(DATA){
+    activeCampaign = DATA.campaign_names ? DATA.campaign_names[DATA.campaign_names.length-1] : 'Campaña 25-26';
+    initFilters();
+    renderAll();
+  }
+}
+setInterval(async()=>{
+  try{
+    const r=await fetch('/api/data?t='+Date.now());
+    if(!r.ok)return;
+    const fresh=await r.json();
+    if(fresh.updated_at!==DATA?.updated_at){DATA=fresh;renderAll();showToast('✓ Datos actualizados');}
+  }catch(e){}
+},5*60*1000);
+
+// ── UTILS ────────────────────────────────────────────────────────
+const f0=n=>(n&&n!==0)?n.toLocaleString('es-AR',{maximumFractionDigits:0}):'—';
+const f1=n=>(n&&n!==0)?n.toLocaleString('es-AR',{minimumFractionDigits:1,maximumFractionDigits:1}):'—';
+const f2=n=>(n&&n!==0)?n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';
+const fM=n=>n>0?'$'+n.toLocaleString('es-AR',{maximumFractionDigits:0}):'—';
+const fP=n=>typeof n==='number'?n.toFixed(1)+'%':'—';
+const sign=n=>n>=0?'+':'';
+
+function cropColor(c){
+  const dark={'MAIZ RIEGO':'#C4A84F','MAIZ':'#D4B85F','SOJA':'#5AA653','SOJA RIEGO':'#4E8A4D'};
+  const light={'MAIZ RIEGO':'#A8893A','MAIZ':'#C4A84F','SOJA':'#2D5A27','SOJA RIEGO':'#3B7A35'};
+  return (IS_DARK?dark:light)[c]||'#888';
+}
+const CROP_CLASS={'MAIZ RIEGO':'pill-mr','MAIZ':'pill-m','SOJA':'pill-s','SOJA RIEGO':'pill-sr'};
+const CF_CLASS={'MAIZ RIEGO':'c-mr','MAIZ':'c-m','SOJA':'c-s','SOJA RIEGO':'c-sr'};
+
+function pillClass(c){return CROP_CLASS[c]||'pill-s';}
+function barColor(p){if(IS_DARK)return p>=80?'#5AA653':p>=30?'#C4A84F':'#4E8A4D';return p>=80?'#2D5A27':p>=30?'#A8893A':'#3B7A35';}
+function fmtDate(iso){
+  if(!iso)return'—';
+  return new Date(iso).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+function mkChart(id,cfg){
+  if(charts[id]){try{charts[id].destroy();}catch(e){} delete charts[id];}
+  const el=document.getElementById(id);
+  if(!el)return;
+  // Also destroy any orphaned Chart.js instance on this canvas
+  const existing=Chart.getChart(el);
+  if(existing) existing.destroy();
+  charts[id]=new Chart(el,cfg);
+}
+
+// ── FILTRO CULTIVOS ───────────────────────────────────────────────
+function initFilters(){
+  const campRecords = (DATA.campaigns && activeCampaign)
+    ? (DATA.campaigns[activeCampaign] || [])
+    : (DATA.records || []);
+  const allCrops=[...new Set(campRecords.map(r=>r['Job Crop']))].sort();
+  const allFarmCodes=[...new Set(campRecords.map(r=>r['Farm Code']))].sort();
+
+  // Farm filter bar
+  const fbar=document.getElementById('farm-filter-bar');
+  if(fbar){
+    fbar.innerHTML='';
+    const fbtnAll=document.createElement('button');
+    fbtnAll.className='ff-btn on';
+    fbtnAll.textContent='Todos los campos';
+    fbtnAll.dataset.farm='all';
+    fbtnAll.onclick=()=>toggleFarm('all',fbtnAll);
+    fbar.appendChild(fbtnAll);
+    allFarmCodes.forEach(fc=>{
+      const btn=document.createElement('button');
+      btn.className='ff-btn';
+      btn.textContent=fc;
+      btn.dataset.farm=fc;
+      btn.onclick=()=>toggleFarm(fc,btn);
+      fbar.appendChild(btn);
+    });
+  }
+  const bar=document.getElementById('crop-filter-bar');
+  bar.innerHTML='';
+
+  // Botón TODOS
+  const btnAll=document.createElement('button');
+  btnAll.className='cf-btn on';
+  btnAll.textContent='Todos';
+  btnAll.dataset.crop='all';
+  btnAll.onclick=()=>toggleCrop('all',btnAll);
+  bar.appendChild(btnAll);
+
+  allCrops.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='cf-btn '+(CF_CLASS[c]||'');
+    btn.textContent=c;
+    btn.dataset.crop=c;
+    btn.onclick=()=>toggleCrop(c,btn);
+    bar.appendChild(btn);
+  });
+}
+
+function toggleCrop(crop, btn){
+  const allBtn=document.querySelector('.cf-btn[data-crop="all"]');
+  if(crop==='all'){
+    activeCrops=new Set(['all']);
+    document.querySelectorAll('.cf-btn').forEach(b=>{
+      b.classList.toggle('on',b.dataset.crop==='all');
+    });
+  } else {
+    activeCrops.delete('all');
+    allBtn.classList.remove('on');
+    if(activeCrops.has(crop)){
+      activeCrops.delete(crop);
+      btn.classList.remove('on');
+      if(activeCrops.size===0){activeCrops.add('all');allBtn.classList.add('on');}
+    } else {
+      activeCrops.add(crop);
+      btn.classList.add('on');
+    }
+  }
+  renderAll();
+}
+
+function getFiltered(){
+  const allRecords = (DATA.campaigns && activeCampaign)
+    ? (DATA.campaigns[activeCampaign] || [])
+    : (DATA.records || []);
+  let filtered = activeCrops.has('all') ? allRecords : allRecords.filter(r=>activeCrops.has(r['Job Crop']));
+  if(!activeFarms.has('all')) filtered = filtered.filter(r=>activeFarms.has(r['Farm Code']));
+  return filtered;
+}
+
+function getCropLabel(){
+  if(activeCrops.has('all'))return'Todos los cultivos';
+  return[...activeCrops].join(' · ');
+}
+
+// ── BANNER ────────────────────────────────────────────────────────
+function makeBanner(id){
+  const label=getCropLabel();
+  const el=document.getElementById(id);
+  if(!el)return;
+  if(activeCrops.has('all')){el.innerHTML='';return;}
+  const crops=[...activeCrops];
+  const pills=crops.map(c=>`<span class="pill ${pillClass(c)}">${c}</span>`).join(' ');
+  el.innerHTML=`<div class="crop-banner"><div><div class="crop-banner-label">Mostrando cultivo</div><div class="crop-banner-value">${label}</div></div><div style="display:flex;gap:4px;flex-wrap:wrap">${pills}</div></div>`;
+}
+
+// ── AGGREGATE ─────────────────────────────────────────────────────
+function aggregate(records){
+  const farms={},crops={};
+  records.forEach(r=>{
+    const fc=r['Farm Code'],jc=r['Job Crop'];
+    if(!farms[fc])farms[fc]={ha:0,hh:0,tot:0,est:0,ca:0,ea:0,pn:0,pd:0,crops:new Set(),cropData:{}};
+    if(!crops[jc])crops[jc]={ha:0,hh:0,tot:0,est:0,ca:0,ea:0};
+    const f=farms[fc],cr=crops[jc];
+    const ha=r['Hectares Farmed']||0,hh=r['Harvested Hectares']||0;
+    const tot=r['Total (t)']||0,est=r['Est. Total (t)']||0;
+    const ca=r['Current Amount (LCY)']||0,ea=r['Est. Amount (LCY)']||0;
+    const cp=r['Current Price (LCY)']||0;
+    f.ha+=ha;f.hh+=hh;f.tot+=tot;f.est+=est;f.ca+=ca;f.ea+=ea;f.crops.add(jc);
+    if(!f.cropData[jc])f.cropData[jc]={ha:0,hh:0,tot:0,est:0};
+    f.cropData[jc].ha+=ha;f.cropData[jc].hh+=hh;f.cropData[jc].tot+=tot;f.cropData[jc].est+=est;
+    if(tot>0&&cp>0){f.pn+=ca;f.pd+=tot;}
+    cr.ha+=ha;cr.hh+=hh;cr.tot+=tot;cr.est+=est;cr.ca+=ca;cr.ea+=ea;
+  });
+  return{farms,crops};
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────
+function renderAll(){
+  const records=getFiltered();
+  // Update campaign selector label
+  safeText('hdr-sub',activeCampaign||'Campaña 25/26');
+  const{farms,crops}=aggregate(records);
+  const fv=Object.values(farms);
+  const totHa=fv.reduce((a,f)=>a+f.ha,0),totHH=fv.reduce((a,f)=>a+f.hh,0);
+  const totT=fv.reduce((a,f)=>a+f.tot,0),totEst=fv.reduce((a,f)=>a+f.est,0);
+  const totCA=fv.reduce((a,f)=>a+f.ca,0),totEA=fv.reduce((a,f)=>a+f.ea,0);
+  const totPN=fv.reduce((a,f)=>a+f.pn,0),totPD=fv.reduce((a,f)=>a+f.pd,0);
+  const pctAv=totHa?(totHH/totHa*100):0;
+  const rindeReal=totHH>0?(totT/totHH):0;
+  const rindeEst=totHa>0?(totEst/totHa):0;
+  const desvioAbs=rindeReal&&rindeEst?(rindeReal-rindeEst):0;
+  const desvioPct=rindeEst>0?(desvioAbs/rindeEst*100):0;
+  const cumplPct=rindeEst>0?(rindeReal/rindeEst*100):0;
+  const precioPromReal=totPD>0?(totPN/totPD):0;
+  const ingDesvio=totCA-totEA;
+  const ingPctDesvio=totEA>0?(ingDesvio/totEA*100):0;
+  const pendiente=totEA-totCA;
+  const pctCobrado=totEA>0?(totCA/totEA*100):0;
+  const ingHa=totHH>0?(totCA/totHH):0;
+
+  safeText('status-badge',pctAv>=100?'COMPLETO':'EN CURSO');
+  const ldot=document.getElementById('live-dot');if(ldot)ldot.style.background='var(--green-m)';
+  safeText('updated-label','Actualizado: '+fmtDate(DATA.updated_at));
+
+  const ls=document.getElementById('loading-state');if(ls)ls.style.display='none';
+  const rc = document.getElementById('resumen-content');
+  rc.style.display='block';
+  rc.style.opacity='0';
+  rc.style.transition='opacity .5s ease';
+  setTimeout(()=>{ rc.style.opacity='1'; },20);
+
+  // Animate donut grid
+  setTimeout(()=>{
+    document.querySelectorAll('.donut-card').forEach((c,i)=>animateEl(c,i*60));
+  },200);
+
+  ['resumen','rindes','financiero','estab'].forEach(id=>makeBanner('banner-'+id));
+
+  renderEjecutivo(farms,totHa,totHH,totT,totEst,totCA,totEA,pctAv);
+  recordSnapshot(totHa,totHH,totT,totEst,totCA,totEA,pctAv,rindeReal);
+  renderComparar();
+  renderHistoria();
+  renderResumen(totHa,totHH,totT,totEst,pctAv,records.length,farms,crops);
+  renderRindes(rindeReal,rindeEst,desvioAbs,desvioPct,cumplPct,farms,crops);
+  renderFinanciero(totCA,totEA,ingDesvio,ingPctDesvio,precioPromReal,totHH,pendiente,pctCobrado,ingHa,crops);
+  renderFarms(farms);
+  renderPlots(records);
+}
+
+// ── RESUMEN ───────────────────────────────────────────────────────
+function renderResumen(totHa,totHH,totT,totEst,pctAv,nPlots,farms,crops){
+  // KPI AREA TOTAL grande
+  document.getElementById('kpi-area-total').innerHTML=`
+    <div class="kpi-area-label">Superficie total</div>
+    <div class="kpi-area-row">
+      <div><span class="kpi-area-main">${f0(totHa)}</span><span class="kpi-area-unit">ha</span></div>
+      <div style="text-align:right;font-size:11px;color:var(--ink3)">${nPlots} lotes · ${Object.keys(farms).length} estab.</div>
+    </div>
+    <div class="kpi-area-splits">
+      <div class="kpi-area-split">
+        <div class="kas-val" style="color:var(--blue)">${f1(totHH)} ha</div>
+        <div class="kas-label">Cosechadas</div>
+      </div>
+      <div class="kpi-area-split">
+        <div class="kas-val" style="color:var(--ink3)">${f1(totHa-totHH)} ha</div>
+        <div class="kas-label">Restantes</div>
+      </div>
+      <div class="kpi-area-split">
+        <div class="kas-val" style="color:${pctAv>=80?'var(--green)':pctAv>=30?'var(--amber)':'var(--blue)'}">${fP(pctAv)}</div>
+        <div class="kas-label">Completado</div>
+      </div>
+    </div>
+    <div class="prog-wrap" style="margin-top:10px"><div class="prog-bar" style="width:${Math.min(pctAv,100).toFixed(1)}%;background:var(--green-m)"></div></div>`;
+
+  document.getElementById('kpi-avance').innerHTML=`
+    <div class="kpi-label">Avance global de cosecha</div>
+    <div class="kpi-val">${fP(pctAv)}</div>
+    <div class="kpi-sub">${f1(totHH)} de ${f0(totHa)} ha cosechadas</div>`;
+
+  document.getElementById('kpi-prod').innerHTML=`
+    <div class="kpi-label">Producción actual</div>
+    <div class="kpi-val">${f0(totT)}</div>
+    <div class="kpi-sub">toneladas</div>`;
+
+  document.getElementById('kpi-prod-est').innerHTML=`
+    <div class="kpi-label">Prod. estimada total</div>
+    <div class="kpi-val sm">${f0(totEst)}</div>
+    <div class="kpi-sub">toneladas al 100%</div>`;
+
+  // DONUTS por campo
+  const farmEntries=Object.entries(farms).sort((a,b)=>b[1].ha-a[1].ha);
+  const donutGrid=document.getElementById('donut-grid');
+  donutGrid.innerHTML='';
+
+  // Destruir TODOS los charts donut anteriores
+  Object.keys(charts).filter(k=>k.startsWith('donut-')).forEach(k=>{
+    try{charts[k].destroy();}catch(e){}
+    delete charts[k];
+  });
+  // También destruir por canvas ID directamente
+  document.querySelectorAll('[id^="donut-"]').forEach(canvas=>{
+    const existing = Chart.getChart(canvas);
+    if(existing) existing.destroy();
+  });
+
+  farmEntries.forEach(([fc,f])=>{
+    const p=f.ha?(f.hh/f.ha*100):0;
+    const bc=barColor(p);
+    const div=document.createElement('div');
+    div.className='donut-card';
+    const cid='donut-'+fc;
+    div.innerHTML=`
+      <div class="ufarm-header" style="margin-bottom:5px">
+        <div class="ufarm-name">${fc}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="ufarm-ha">${f1(f.hh)} / ${f1(f.ha)} ha</div>
+          <div class="ufarm-pct" style="color:${bc}">${Math.round(p)}%</div>
+        </div>
+      </div>
+      <div class="ufarm-bar-wrap"><div class="ufarm-bar" id="${cid}-bar" style="width:0%;background:${bc}"></div></div>`;
+    donutGrid.appendChild(div);
+
+    setTimeout(()=>{
+      const bar=document.getElementById(cid+'-bar');
+      if(bar) bar.style.width=Math.min(p,100).toFixed(1)+'%';
+    },50);
+  });
+
+  // Chart barras apiladas
+  const farmE=Object.entries(farms).sort((a,b)=>b[1].hh-a[1].hh);
+  mkChart('chart-farm',{type:'bar',data:{
+    labels:farmE.map(f=>f[0]),
+    datasets:[
+      {label:'Cosechado',data:farmE.map(f=>+f[1].hh.toFixed(1)),backgroundColor:CHART_HARVESTED},
+      {label:'Restante', data:farmE.map(f=>+(f[1].ha-f[1].hh).toFixed(1)),backgroundColor:CHART_REST}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{color:CHART_TICK,font:{size:11}}},
+            y:{stacked:true,grid:{color:CHART_GRID},ticks:{color:CHART_TICK,font:{size:10}}}}}});
+
+  const cropE=Object.entries(crops);
+  mkChart('chart-crop',{type:'bar',data:{
+    labels:cropE.map(c=>c[0]),
+    datasets:[
+      {label:'Actual (t)', data:cropE.map(([,c])=>Math.round(c.tot)),backgroundColor:cropE.map(([k])=>cropColor(k)||'#888')},
+      {label:'Estimada (t)',data:cropE.map(([,c])=>Math.round(c.est)),backgroundColor:CHART_NEUTRAL}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{display:false},ticks:{color:CHART_TICK,font:{size:10}}},
+            y:{grid:{color:CHART_GRID},ticks:{color:CHART_TICK,font:{size:10}}}}}});
+}
+
+// ── RINDES ────────────────────────────────────────────────────────
+function renderRindes(rindeReal,rindeEst,desvioAbs,desvioPct,cumplPct,farms,crops){
+  const dPos=desvioAbs>=0,dC=dPos?'var(--green)':'var(--red)';
+  document.getElementById('kpi-rinde-real').innerHTML=`<div class="kpi-label">Rinde real (t/ha)</div><div class="kpi-val">${f2(rindeReal)}</div><div class="kpi-sub">toneladas por hectárea</div>`;
+  document.getElementById('kpi-rinde-est').innerHTML=`<div class="kpi-label">Rinde estimado (t/ha)</div><div class="kpi-val sm">${f2(rindeEst)}</div><div class="kpi-sub">proyección original</div>`;
+  document.getElementById('kpi-desvio').innerHTML=`<div class="kpi-label">Desvío de rinde</div><div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><div class="kpi-val" style="color:${dC}">${sign(desvioAbs)}${f2(desvioAbs)} t/ha</div><div class="kpi-val sm" style="color:${dC}">${sign(desvioPct)}${fP(desvioPct)}</div></div><div class="kpi-sub">${dPos?'Por encima del estimado':'Por debajo del estimado'}</div>`;
+  document.getElementById('kpi-cumpl').innerHTML=`<div class="kpi-label">% Cumplimiento</div><div class="kpi-val sm" style="color:${cumplPct>=100?'var(--green)':'var(--amber)'}">${fP(cumplPct)}</div><div class="kpi-sub">real vs proyectado</div>`;
+  document.getElementById('kpi-rinde-qq').innerHTML=`<div class="kpi-label">Rinde en qq/ha</div><div class="kpi-val sm">${f1(rindeReal*10)}</div><div class="kpi-sub">quintales por hectárea</div>`;
+
+  renderRindePorCampo(farms);
+  renderCropCompare(crops);
+  const cropE=Object.entries(crops);
+  mkChart('chart-rinde-crop',{type:'bar',data:{
+    labels:cropE.map(c=>c[0]),
+    datasets:[
+      {label:'Real (t/ha)',    data:cropE.map(([,c])=>c.hh>0?+(c.tot/c.hh).toFixed(2):0),backgroundColor:cropE.map(([k])=>cropColor(k)||'#888')},
+      {label:'Estimado (t/ha)',data:cropE.map(([,c])=>c.ha>0?+(c.est/c.ha).toFixed(2):0),backgroundColor:CHART_NEUTRAL}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{display:false},ticks:{color:CHART_TICK,font:{size:10}}},
+            y:{grid:{color:CHART_GRID},ticks:{color:CHART_TICK,font:{size:10}},
+               title:{display:true,text:'t/ha',color:CHART_TICK,font:{size:10}}}}}});
+
+  const farmE=Object.entries(farms).sort((a,b)=>b[1].hh-a[1].hh);
+  document.getElementById('farm-desvio-list').innerHTML=farmE.map(([fc,f])=>{
+    if(f.hh===0)return`<div class="ufarm-row">
+      <div class="ufarm-header">
+        <div class="ufarm-name">${fc}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="ufarm-ha">0 / ${f1(f.ha)} ha</div>
+          <span class="dev-badge dev-neu">Sin cosechar</span>
+        </div>
+      </div>
+      <div class="ufarm-bar-wrap"><div class="ufarm-bar" style="width:0%;background:var(--border)"></div></div>
+    </div>`;
+    const rr=f.tot/f.hh,re=f.est/f.ha,dev=rr-re,devP=re>0?(dev/re*100):0;
+    const pos=dev>=0,bc=barColor(f.hh/f.ha*100);
+    const pp=f.hh/f.ha*100;
+    return`<div class="ufarm-row">
+      <div class="ufarm-header">
+        <div class="ufarm-name">${fc}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="ufarm-ha">${f1(f.hh)} / ${f1(f.ha)} ha</div>
+          <span class="dev-badge ${pos?'dev-pos':'dev-neg'}">${sign(devP)}${devP.toFixed(1)}%</span>
+        </div>
+      </div>
+      <div class="ufarm-bar-wrap"><div class="ufarm-bar" style="width:${Math.min(pp,100).toFixed(1)}%;background:${bc}"></div></div>
+      <div class="farm-stats" style="margin-top:4px">
+        <div class="fstat">Real: <b>${f2(rr)} t/ha</b></div>
+        <div class="fstat">Est: <b>${f2(re)} t/ha</b></div>
+        <div class="fstat">Desvío: <b style="color:${pos?'var(--green)':'var(--red)'}">${sign(dev)}${f2(dev)} t/ha</b></div>
+        <div class="fstat">Prod: <b>${f0(f.tot)} t</b></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── FINANCIERO ────────────────────────────────────────────────────
+function renderFinanciero(totCA,totEA,ingDesvio,ingPctDesvio,precioPromReal,totHH,pendiente,pctCobrado,ingHa,crops){
+  const iPos=ingDesvio>=0,iC=iPos?'var(--green)':'var(--red)';
+  document.getElementById('kpi-ing-real').innerHTML=`<div class="kpi-label">Ingreso real</div><div class="kpi-val xs">${fM(totCA)}</div><div class="kpi-sub">LCY facturado</div>`;
+  document.getElementById('kpi-ing-est').innerHTML=`<div class="kpi-label">Ingreso estimado</div><div class="kpi-val xs">${fM(totEA)}</div><div class="kpi-sub">LCY proyectado</div>`;
+  document.getElementById('kpi-ing-desvio').innerHTML=`<div class="kpi-label">Desvío de ingreso</div><div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap"><div class="kpi-val xs" style="color:${iC}">${sign(ingDesvio)}${fM(ingDesvio)}</div><div class="kpi-val sm" style="color:${iC}">${sign(ingPctDesvio)}${fP(ingPctDesvio)}</div></div><div class="kpi-sub">Real vs estimado</div>`;
+  document.getElementById('kpi-precio-real').innerHTML=`<div class="kpi-label">Precio prom. ponderado</div><div class="kpi-val sm">${precioPromReal>0?'$'+f1(precioPromReal):'—'}</div><div class="kpi-sub">LCY / tonelada</div>`;
+  document.getElementById('kpi-ing-ha').innerHTML=`<div class="kpi-label">Ingreso / ha cosechada</div><div class="kpi-val sm">${ingHa>0?'$'+f0(ingHa):'—'}</div><div class="kpi-sub">LCY por hectárea</div>`;
+  document.getElementById('kpi-pendiente').innerHTML=`<div class="kpi-label">Pendiente de cobro</div><div class="kpi-val xs">${fM(pendiente)}</div><div class="kpi-sub">LCY por cosechar</div>`;
+  document.getElementById('kpi-pct-cobrado').innerHTML=`<div class="kpi-label">% Cobrado del total</div><div class="kpi-val sm">${fP(pctCobrado)}</div><div class="prog-wrap"><div class="prog-bar" style="width:${Math.min(pctCobrado,100).toFixed(1)}%;background:var(--amber-m)"></div></div>`;
+
+  const cropE=Object.entries(crops);
+  mkChart('chart-ing-crop',{type:'bar',data:{
+    labels:cropE.map(c=>c[0]),
+    datasets:[
+      {label:'Real',    data:cropE.map(([,c])=>Math.round(c.ca)),backgroundColor:cropE.map(([k])=>cropColor(k)||'#888')},
+      {label:'Estimado',data:cropE.map(([,c])=>Math.round(c.ea)),backgroundColor:CHART_NEUTRAL}
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{display:false},ticks:{color:CHART_TICK,font:{size:10}}},
+            y:{grid:{color:CHART_GRID},ticks:{color:CHART_TICK,font:{size:10},callback:v=>'$'+Math.round(v/1000)+'k'}}}}});
+}
+
+// ── FARMS ─────────────────────────────────────────────────────────
+function renderFarms(farms){
+  const entries=Object.entries(farms).sort((a,b)=>b[1].ha-a[1].ha);
+  document.getElementById('farm-list').innerHTML=entries.map(([fc,f])=>{
+    const p=f.ha?(f.hh/f.ha*100):0,bc=barColor(p);
+    const rinde=f.hh>0?(f.tot/f.hh):null;
+    const re=f.ha>0?(f.est/f.ha):null;
+    const dev=rinde&&re?(rinde-re):null,devP=dev&&re?(dev/re*100):null;
+    const cropKeys=Object.keys(f.cropData||{});
+    const multiCrop=cropKeys.length>1;
+    // Per-crop rows
+    const cropRows=cropKeys.map(cr=>{
+      const cd=f.cropData[cr];
+      const cp2=cd.ha?(cd.hh/cd.ha*100):0,cb2=barColor(cp2);
+      const cr_rinde=cd.hh>0?(cd.tot/cd.hh):null;
+      const cr_rest=cd.ha-cd.hh;
+      return`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <span class="pill ${pillClass(cr)}" style="font-size:10px">${cr}</span>
+          <span style="font-size:12px;font-weight:700;color:${cb2}">${fP(cp2)}</span>
+        </div>
+        <div class="prog-wrap" style="margin-bottom:6px"><div class="prog-bar" style="width:${Math.min(cp2,100)}%;background:${cb2}"></div></div>
+        <div class="farm-stats">
+          <div class="fstat">HA total: <b style="font-size:13px">${f1(cd.ha)}</b></div>
+          <div class="fstat">Cosech.: <b>${f1(cd.hh)} ha</b></div>
+          <div class="fstat">Restante: <b>${f1(cr_rest)} ha</b></div>
+          <div class="fstat">Producción: <b>${f0(cd.tot)} t</b></div>
+          ${cr_rinde?`<div class="fstat">Rinde: <b>${f2(cr_rinde)} t/ha</b></div>`:''}
+          <div class="fstat">Est.: <b>${f0(cd.est)} t</b></div>
+        </div>
+      </div>`;
+    }).join('');
+    return`<div class="farm-row">
+      <!-- ① NOMBRE + HA GRANDE (primero) -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div class="farm-name">${fc}</div>
+          <div style="font-size:26px;font-weight:800;color:var(--ink);line-height:1;margin-top:3px">${f1(f.ha)} <span style="font-size:13px;font-weight:600;color:var(--ink3)">ha totales</span></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:24px;font-weight:800;color:${bc}">${fP(p)}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px">${f1(f.hh)} / ${f1(f.ha)} ha cosech.</div>
+        </div>
+      </div>
+      <!-- ② CUADRO DE STATS (antes de la barra) -->
+      <div class="farm-stats" style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:8px">
+        <div class="fstat">Producción: <b>${f0(f.tot)} t</b></div>
+        <div class="fstat">Est. total: <b>${f0(f.est)} t</b></div>
+        ${rinde?`<div class="fstat">Rinde: <b>${f2(rinde)} t/ha</b></div>`:''}
+        ${dev!==null?`<div class="fstat">Desvío: <b style="color:${dev>=0?'var(--green)':'var(--red)'}">${sign(dev)}${f2(dev)} t/ha (${sign(devP)}${devP.toFixed(1)}%)</b></div>`:''}
+        ${f.ca>0?`<div class="fstat">Ingreso: <b>${fM(f.ca)}</b></div>`:''}
+        ${f.ea>0?`<div class="fstat">Ingr.est.: <b>${fM(f.ea)}</b></div>`:''}
+      </div>
+      <!-- ③ BARRA DE PROGRESO (después del cuadro) -->
+      <div class="prog-wrap"><div class="prog-bar" style="width:${Math.min(p,100)}%;background:${bc}"></div></div>
+      <!-- ④ BREAKDOWN POR CULTIVO -->
+      ${multiCrop?cropRows:''}
+    </div>`;
+  }).join('');
+}
+
+// ── PLOTS ─────────────────────────────────────────────────────────
+function renderPlots(records){
+  const allCrops=['Todos',...new Set(records.map(r=>r['Job Crop']))];
+  document.getElementById('plot-filters').innerHTML=allCrops.map(c=>
+    `<button class="f-btn${c===plotFilter?' on':''}" onclick="setPlotFilter('${c}')">${c}</button>`
+  ).join('');
+  const filtered=plotFilter==='Todos'?records:records.filter(r=>r['Job Crop']===plotFilter);
+  const sorted=[...filtered].sort((a,b)=>(b['Harvested Hectares']||0)-(a['Harvested Hectares']||0));
+  if(sorted.length===0){document.getElementById('plot-list').innerHTML='<div class="no-data">Sin lotes para este filtro</div>';return;}
+  document.getElementById('plot-list').innerHTML=sorted.map(r=>{
+    const hh=r['Harvested Hectares']||0,done=hh>0;
+    const yr=r['Yield to Date (t/ha)']||0,ye=r['Est. Yield (t/Ha)']||0;
+    const dev=done&&ye?(yr-ye):null,devP=dev!==null&&ye?(dev/ye*100):null;
+    const dC=dev>=0?'var(--green)':'var(--red)';
+    return`<div class="plot-item${done?' done':''}"><div class="plot-name">${r['Plot Code']}</div><div class="plot-ha">${f1(r['Hectares Farmed'])} ha</div><div class="plot-meta"><b style="color:var(--ink2)">${r['Farm Code']}</b><span class="pill ${pillClass(r['Job Crop'])}">${r['Job Crop']}</span></div><div class="plot-rinde" style="color:${done?'var(--green)':'var(--ink3)'}">${done?f2(yr)+' t/ha':'Sin cosechar'}</div><div class="plot-stats">${done?`<div class="pstat">Cosech: <b>${f1(hh)} ha</b></div><div class="pstat">Prod: <b>${f1(r['Total (t)']||0)} t</b></div><div class="pstat">R.est: <b>${f2(ye)} t/ha</b></div>${dev!==null?`<div class="pstat">Desvío: <b style="color:${dC}">${sign(dev)}${f2(dev)} (${sign(devP)}${devP.toFixed(1)}%)</b></div>`:''}<div class="pstat">Monto: <b>${fM(r['Current Amount (LCY)']||0)}</b></div>`:`<div class="pstat">R.est: <b>${f2(ye)} t/ha</b></div><div class="pstat">Est total: <b>${f1(r['Est. Total (t)']||0)} t</b></div><div class="pstat">M.est: <b>${fM(r['Est. Amount (LCY)']||0)}</b></div>`}</div></div>`;
+  }).join('');
+}
+
+function setPlotFilter(c){plotFilter=c;renderPlots(getFiltered());}
+
+function showTab(name,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  el.classList.add('active');
+}
+
+loadData();
+</script>
+</body>
+</html>
