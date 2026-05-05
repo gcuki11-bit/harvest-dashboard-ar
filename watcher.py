@@ -15,7 +15,7 @@ import os
 
 # ── CONFIG ──────────────────────────────────────────────────────────────────
 EXCEL_PATH   = Path(__file__).parent / "Reporte de Cosecha ARG - Database.xlsx"
-GITHUB_TOKEN = "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"   # mismo token
+GITHUB_TOKEN = "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"
 GITHUB_OWNER = "gcuki11-bit"
 GITHUB_REPO  = "harvest-dashboard-ar"       # ← repo nuevo para AR
 GITHUB_FILE  = "public/harvest_data.json"
