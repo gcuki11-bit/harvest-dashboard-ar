@@ -270,9 +270,54 @@ body{font-family:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;b
 .toast.show{opacity:1}
 
 .no-data{text-align:center;padding:40px 20px;color:var(--ink3);font-size:13px}
+
+/* LOGIN OVERLAY */
+#login-overlay{position:fixed;inset:0;background:#0F1A0E;display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:20px}
+#login-overlay.hidden{display:none}
+.login-box{background:#172015;border:1px solid #2A3828;border-radius:16px;padding:36px 32px;width:min(340px,90vw);display:flex;flex-direction:column;align-items:center;gap:18px}
+.login-logo{font-size:22px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.login-logo span{color:#5AA653}
+.login-sub{font-size:12px;color:#7A7A6A;text-align:center}
+.login-input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #2A3828;background:#0F1A0E;color:#F0EDE4;font-size:15px;outline:none;text-align:center;letter-spacing:2px}
+.login-input:focus{border-color:#5AA653}
+.login-btn{width:100%;padding:12px;border-radius:10px;background:#2D5A27;border:none;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:background .15s}
+.login-btn:hover{background:#3B7A35}
+.login-error{font-size:12px;color:#E06060;min-height:16px;text-align:center}
 </style>
 </head>
 <body>
+
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">Ingleby <span>Farms</span></div>
+    <div class="login-sub">Reporte de Cosecha · Argentina<br>Ingresá la contraseña para continuar</div>
+    <input id="login-pwd" class="login-input" type="password" placeholder="••••••••••••" autocomplete="current-password" />
+    <button class="login-btn" onclick="checkLogin()">Ingresar</button>
+    <div class="login-error" id="login-err"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  if(sessionStorage.getItem('ingleby_auth')==='ok'){
+    document.getElementById('login-overlay').classList.add('hidden');
+  }
+  document.getElementById('login-pwd').addEventListener('keydown',function(e){
+    if(e.key==='Enter') checkLogin();
+  });
+})();
+function checkLogin(){
+  var pwd=document.getElementById('login-pwd').value;
+  if(pwd==='Ingleby2026'){
+    sessionStorage.setItem('ingleby_auth','ok');
+    document.getElementById('login-overlay').classList.add('hidden');
+  } else {
+    document.getElementById('login-err').textContent='Contraseña incorrecta. Intentá de nuevo.';
+    document.getElementById('login-pwd').value='';
+    document.getElementById('login-pwd').focus();
+  }
+}
+</script>
 
 <div class="hdr">
   <div class="hdr-top">
